@@ -1,0 +1,13 @@
+{
+  "name": "recall-lab",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Local study workspace with bring-your-own Codex AI",
+  "scripts": {
+    "start": "node server.cjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

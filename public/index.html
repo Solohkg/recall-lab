@@ -1,0 +1,1926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<script src="/runtime.js"></script>
+<title>Recall Lab</title>
+<style>
+/* Layout: one calm 1080px column in Anthropic's warm neutrals. A single clay accent marks the next action; everything else stays neutral to keep eye strain low. */
+:root{
+  --bg:#F5F4EE; --surface:#FBFAF6; --surface-2:#EDEBE3; --ink:#2B2A26; --ink-strong:#141413; --muted:#6E6C64; --line:#E2DFD5;
+  --accent:#C2603E; --accent-ink:#FFFFFF; --accent-soft:#F3E5DC;
+  --good:#5D7A4C; --warn:#9A7230; --bad:#B0533C;
+  --display:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:12px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#262624; --surface:#2F2F2C; --surface-2:#393935; --ink:#E8E6DE; --ink-strong:#F5F4EE; --muted:#A3A097; --line:#44433E;
+  --accent:#D3795A; --accent-ink:#1E1D1B; --accent-soft:#45342C;
+  --good:#93B07F; --warn:#D2AA62; --bad:#DD8A73; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#262624; --surface:#2F2F2C; --surface-2:#393935; --ink:#E8E6DE; --ink-strong:#F5F4EE; --muted:#A3A097; --line:#44433E;
+  --accent:#D3795A; --accent-ink:#1E1D1B; --accent-soft:#45342C;
+  --good:#93B07F; --warn:#D2AA62; --bad:#DD8A73; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--ink)}
+body{font-family:var(--body);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);color:var(--ink-strong);line-height:1.2;margin:0;text-wrap:balance;font-weight:500}
+h1{font-size:clamp(1.65rem,3.6vw,2.15rem)}
+h2{font-size:1.3rem}
+h3{font-size:1.08rem;font-weight:600}
+p{margin:0}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:14px;padding-block:10px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:600;font-size:1.2rem;display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;color:var(--ink-strong)}
+.brand .mark{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+nav.main{display:flex;gap:2px;flex-wrap:wrap}
+nav.main button{background:none;border:0;padding:6px 12px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:600}
+nav.main button:hover{color:var(--ink)}
+nav.main button[aria-current="page"]{background:var(--surface-2);color:var(--ink-strong)}
+.hdr-r{margin-left:auto;display:flex;align-items:center;gap:12px}
+.sync{font-size:.78rem;color:var(--muted)}
+.sync.err{color:var(--bad)}
+main{padding-block:28px 90px}
+.stack{display:flex;flex-direction:column;gap:20px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;min-width:0}
+.panel.flat{background:transparent}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--surface);padding:8px 15px;border-radius:8px;cursor:pointer;font-weight:600;line-height:1.25;text-align:center;text-decoration:none;color:var(--ink)}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06);background:var(--accent)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);background:var(--surface-2)}
+.btn.danger{color:var(--bad)}
+.btn.sm{padding:5px 11px;font-size:.86rem}
+.btn.lg{padding:12px 20px;font-size:1.04rem}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:.76rem;font-weight:600;padding:1px 9px;border-radius:6px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.chip.accent{color:var(--accent);background:var(--accent-soft)}
+.chip.good{color:var(--good)}
+.chip.warn{color:var(--warn)}
+.chip.bad{color:var(--bad)}
+.chip.skip{text-decoration:line-through}
+textarea,input[type=text],input[type=search],input[type=date],input[type=time],select{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+textarea{min-height:110px;resize:vertical;line-height:1.55}
+label.f{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:.92rem}
+label.f span.hint{font-weight:400;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.bar > i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.ring{--p:0;width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p)*1%),var(--surface-2) 0);display:grid;place-items:center;flex:none}
+.ring::before{content:"";grid-area:1/1;width:46px;height:46px;border-radius:50%;background:var(--surface)}
+.ring b{grid-area:1/1;font-family:var(--mono);font-size:.8rem;z-index:1;font-weight:600}
+.ring.big{width:88px;height:88px}
+.ring.big::before{width:70px;height:70px}
+.ring.big b{font-size:1.05rem}
+.hero{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+@media (max-width:760px){.hero{grid-template-columns:1fr}}
+.bignum{font-family:var(--display);font-size:3.4rem;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink-strong)}
+.strip{display:grid;grid-template-columns:repeat(14,1fr);gap:4px}
+.strip i{aspect-ratio:1;border-radius:3px;background:var(--surface-2);max-width:100%}
+.strip i[data-v="1"]{background:color-mix(in srgb,var(--accent) 30%,var(--surface-2))}
+.strip i[data-v="2"]{background:color-mix(in srgb,var(--accent) 60%,var(--surface-2))}
+.strip i[data-v="3"]{background:var(--accent)}
+.lect{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+@media (max-width:600px){.lect{grid-template-columns:auto minmax(0,1fr)}.lect .go{grid-column:1/-1;align-items:flex-start!important}.lect .go span{text-align:left!important}}
+.steps4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.steps4 div{display:flex;flex-direction:column;gap:3px;font-size:.74rem;color:var(--muted);min-width:0}
+.steps4 .bar{height:4px}
+.next{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.next .eyebrow{color:var(--accent)}
+.sec{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:12px;padding:14px 0;border-top:1px solid var(--line);align-items:start}
+.sec:first-child{border-top:0}
+.sec .dot{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line);margin-top:3px;display:grid;place-items:center;font-size:.68rem;font-weight:700;color:var(--accent-ink)}
+.sec .dot.learned{background:color-mix(in srgb,var(--accent) 55%,var(--surface));border-color:transparent}
+.sec .dot.secure{background:var(--accent);border-color:var(--accent)}
+.sec.skipped{opacity:.55}
+.sec .acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:600px){.sec{grid-template-columns:26px minmax(0,1fr)}.sec .acts{grid-column:2;justify-content:flex-start}}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;background:transparent;padding:4px 11px;font-size:.8rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink-strong)}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;font-weight:600;color:var(--muted);cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink-strong);border-bottom-color:var(--accent)}
+.card{max-width:740px;margin:0 auto;width:100%}
+.flash{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;display:flex;flex-direction:column;gap:18px;min-height:280px}
+.flash .q{font-family:var(--display);font-size:1.3rem;line-height:1.45;color:var(--ink-strong);white-space:pre-wrap}
+.flash .a{font-size:1.06rem;white-space:pre-wrap;padding-top:16px;border-top:1px dashed var(--line)}
+.blank{display:inline-block;min-width:3.5em;border-bottom:2px solid var(--accent);color:var(--accent);text-align:center}
+.grades{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.grades button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:9px 4px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:600}
+.grades button:hover{background:var(--surface-2)}
+.grades button small{font-family:var(--mono);font-weight:400;color:var(--muted);font-size:.74rem}
+.grades button.sugg{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.conf{display:flex;gap:8px;flex-wrap:wrap}
+.conf button[aria-pressed="true"]{background:var(--surface-2);border-color:var(--ink);color:var(--ink-strong)}
+.prog{height:3px;background:var(--surface-2);border-radius:2px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent)}
+.fb{border-radius:10px;padding:14px 16px;background:var(--surface-2);display:flex;flex-direction:column;gap:8px}
+.fb ul{margin:0;padding-left:20px}
+.fb h4{margin:0;font-size:.76rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kp{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px}
+.kp li.star::marker{content:"★  ";color:var(--accent)}
+.prose{max-width:68ch;white-space:pre-wrap}
+.hook{border-left:2px solid var(--accent);padding:2px 0 2px 14px;font-style:italic}
+.check{display:flex;flex-direction:column;gap:8px;padding:14px 0;border-top:1px solid var(--line)}
+.opt{display:flex;gap:10px;width:100%;text-align:left;padding:12px 15px;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;align-items:flex-start}
+.opt:hover:not([disabled]){background:var(--surface-2)}
+.opt[disabled]{cursor:default}
+.opt .k{font-family:var(--mono);color:var(--muted);flex:none}
+.opt.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 12%,var(--surface))}
+.opt.wrong{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 10%,var(--surface))}
+.drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:24px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;cursor:pointer}
+.drop.has{border-color:var(--accent);background:var(--accent-soft)}
+.loop{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px}
+.loop div{padding:14px;border-radius:10px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px}
+.loop b{font-family:var(--display);font-weight:600;color:var(--ink-strong)}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.split{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:760px){.split{grid-template-columns:1fr}}
+.side{display:flex;flex-direction:column;gap:2px}
+.side button.item{display:flex;justify-content:space-between;gap:8px;text-align:left;background:none;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--ink);min-width:0}
+.side button.item span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side button.item:hover{background:var(--surface-2)}
+.side button.item[aria-current="true"]{background:var(--surface-2);color:var(--ink-strong);font-weight:600}
+.side .tsearch{margin:4px 0 6px;font-size:.88rem;padding:7px 10px}
+.side .tseg{display:flex;gap:2px;background:var(--surface-2);border-radius:8px;padding:2px;margin-bottom:4px}
+.side .tseg button{flex:1;border:0;background:none;padding:5px 6px;border-radius:6px;font-size:.8rem;color:var(--muted);cursor:pointer}
+.side .tseg button[aria-pressed="true"]{background:var(--surface);color:var(--ink-strong);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.tlist{display:flex;flex-direction:column;gap:1px;max-height:calc(100vh - 230px);overflow-y:auto;margin-right:-6px;padding-right:6px}
+@media (max-width:760px){.tlist{max-height:40vh}}
+.trow{position:relative;display:flex;align-items:center;border-radius:8px}
+.trow:hover,.trow.on{background:var(--surface-2)}
+.trow > button.topen{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;text-align:left;background:none;border:0;padding:7px 4px 7px 10px;cursor:pointer;color:var(--ink)}
+.trow.on > button.topen{color:var(--ink-strong);font-weight:600}
+.trow .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.9rem}
+.trow .ts{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.74rem;color:var(--muted);font-weight:400}
+.trow .tdots{flex:none;border:0;background:none;width:28px;height:28px;margin-right:4px;border-radius:6px;cursor:pointer;color:var(--muted);opacity:0;font-size:1rem;line-height:1}
+.trow:hover .tdots,.trow.on .tdots,.trow .tdots[aria-expanded="true"]{opacity:1}
+.trow .tdots:hover{background:var(--line)}
+@media (hover:none){.trow .tdots{opacity:1}}
+.trow{flex-wrap:wrap}
+.tmenu{flex-basis:100%;display:flex;gap:4px;padding:0 8px 8px}
+.tmenu button{flex:1;border:1px solid var(--line);background:var(--surface);text-align:center;padding:6px 10px;border-radius:6px;cursor:pointer;color:var(--ink);font-size:.85rem}
+.tmenu button:hover{background:var(--bg)}
+.tmenu button.danger{color:var(--bad)}
+.tconfirm{padding:8px 10px;border-radius:8px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px;font-size:.85rem}
+.trename{width:100%;font-size:.88rem;padding:6px 8px}
+.side .lbl{font-size:.74rem;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:12px 10px 4px}
+.lrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;padding:14px 0;border-top:1px solid var(--line);align-items:center}
+.lrow:first-child{border-top:0}
+@media (max-width:600px){.lrow{grid-template-columns:auto minmax(0,1fr)}.lrow .acts{grid-column:1/-1}}
+.hit{font-size:.86rem;color:var(--muted);overflow-wrap:anywhere}
+.hit mark{background:var(--accent-soft);color:var(--ink-strong);border-radius:3px;padding:0 2px}
+.chat{display:flex;flex-direction:column;gap:14px;min-height:240px;max-height:62vh;overflow-y:auto;padding:4px 2px}
+.msg{max-width:88%;padding:10px 14px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--surface-2);color:var(--ink-strong)}
+.msg.assistant{align-self:flex-start;background:transparent;padding-left:0}
+.msg.tool{align-self:flex-start;font-size:.8rem;color:var(--muted);padding:0}
+.msg-ctx{align-self:flex-end;font-size:.74rem;color:var(--muted);max-width:88%;margin-bottom:-10px;text-align:right;overflow-wrap:anywhere}
+.studywrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,410px);gap:20px;align-items:start}
+.side-chat{position:sticky;top:calc(env(safe-area-inset-top,0px) + 70px)}
+.side-chat .chat{max-height:calc(100vh - 420px);min-height:180px}
+@media (max-width:980px){.studywrap{grid-template-columns:minmax(0,1fr)}.side-chat{position:static}.side-chat .chat{max-height:50vh}}
+.composer{display:flex;gap:8px;align-items:flex-end;border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--surface)}
+.composer textarea{border:0;min-height:48px;max-height:220px;padding:6px 8px;background:transparent}
+.composer textarea:focus-visible{outline:none}
+.composer:focus-within{border-color:var(--muted)}
+.slides{display:flex;flex-direction:column;gap:12px}
+.slides img{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff}
+.slides .ph{aspect-ratio:4/3;border:1px dashed var(--line);border-radius:8px;display:grid;place-items:center;color:var(--muted);font-size:.85rem;max-width:100%}
+.crow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:start}
+.crow .t{overflow-wrap:anywhere}
+#modal{position:fixed;inset:0;z-index:50;background:rgba(20,20,19,.45);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+#modal .box{background:var(--surface);border-radius:14px;padding:22px;width:min(560px,100%);max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;border:1px solid var(--line)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink-strong);color:var(--bg);padding:9px 16px;border-radius:8px;font-weight:600;z-index:60;max-width:calc(100% - 32px)}
+.kbd{font-family:var(--mono);font-size:.72rem;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--muted)}
+hr.sep{border:0;border-top:1px solid var(--line);width:100%;margin:0}
+.exam{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:600px){.exam{grid-template-columns:minmax(0,1fr)}}
+.count{display:flex;flex-direction:column;align-items:center;justify-content:center;width:92px;height:92px;border-radius:12px;background:var(--accent-soft);color:var(--accent);flex:none}
+.count b{font-family:var(--display);font-size:2.2rem;line-height:1;font-weight:600}
+.count span{font-size:.75rem;font-weight:700}
+.task{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.task:first-child{border-top:0}
+.elist{display:flex;flex-direction:column;gap:12px;max-height:46vh;overflow-y:auto;padding-right:4px}
+.egroup{display:flex;flex-direction:column;gap:4px}
+.erow{display:flex;gap:12px;align-items:center;width:100%;text-align:left;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;color:var(--ink)}
+.erow:hover{background:var(--surface-2)}
+.erow > span:last-child{display:flex;flex-direction:column;overflow-wrap:anywhere}
+.erow .ebox{width:20px;height:20px;border-radius:5px;border:1.5px solid var(--muted);display:grid;place-items:center;font-size:.8rem;font-weight:700;flex:none;color:var(--accent-ink)}
+.erow[aria-checked="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.erow[aria-checked="true"] .ebox{background:var(--accent);border-color:var(--accent)}
+.pick{display:flex;flex-wrap:wrap;gap:6px}
+.pick button{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:.86rem;color:var(--muted)}
+.pick button[aria-pressed="true"]{border-color:var(--accent);color:var(--ink-strong);background:var(--accent-soft)}
+</style>
+</head>
+<body>
+
+
+<header class="top"><div class="wrap">
+  <button class="brand" data-act="nav" data-arg="today"><span class="mark" aria-hidden="true"></span>Recall Lab</button>
+  <nav class="main">
+    <button data-nav="today" data-act="nav" data-arg="today">Today</button>
+    <button data-nav="reviews" data-act="nav" data-arg="reviews">Reviews</button>
+    <button data-nav="library" data-act="nav" data-arg="library">Library</button>
+    <button data-nav="ask" data-act="nav" data-arg="ask">Ask AI</button>
+  </nav>
+  <div class="hdr-r"><span class="sync" id="sync">Loading…</span><button class="btn primary sm" data-act="nav" data-arg="add">Add lecture</button></div>
+</div></header>
+<main class="wrap" id="view"></main>
+<div id="modal" hidden></div>
+<div id="toast" hidden></div>
+
+<script>
+"use strict";
+/* ---------- constants ---------- */
+const DAY = 86400000;
+const LEVELS = {1:"Remember",2:"Understand",3:"Apply",4:"Analyse & Evaluate"};
+const OPEN_TYPES = ["why","case","compare"];
+const MODES = [["mclq","MC → Written"],["mc","MC only"],["lq","Written only"],["mix","Mix"]];
+const PDFJS = "/vendor/pdf.min.js";
+const PDFJS_W = "/vendor/pdf.worker.min.js";
+const LS = "recall-lab-studio-v3";
+
+/* ---------- state ---------- */
+function freshAdd(){ return {name:"", text:"", focus:"", fileName:"", file:null, pages:null, images:[], srcKind:"", status:"", busy:false, err:"", showPaste:false, courseId:"", newCourse:""}; }
+const S = {
+  decks: [], threads: [], profile: defProfile(), mode: "local", view: "today", deckId: null, secId: null, ltab: "path",
+  session: null, feyn: null, quiz: null, modal: null, add: freshAdd(),
+  chat: {input:"", busy:false, threadId:null, stream:"", err:"", ctl:null},
+  askId: null, askUI: {q:"", by:"date", menu:null, rename:null, renameText:"", confirm:null}, tutorId: {}, rev: {f:"due", q:"", deck:""}, lib: {course:"all", q:"", sort:"recent"}, showSlides: false,
+  split: (() => { try{ const v = localStorage.getItem("recall-lab-split"); if(v != null) return v === "1"; }catch(e){} return window.innerWidth >= 980; })(),
+  secThread: {}, secTemp: {},
+  focusDraft: {}, gen: {}, ai: "pending", aiTools: false, aiImages: false, aiBlocked: false, cardFilter: 0,
+};
+let db = null, uid = null, sample = null, assets = null;
+const PAGES = {}, PDFDOC = {}, PIMG = {};
+
+function defProfile(){ return {kind:"profile", streak:0, lastDay:null, history:{}, courses:[], mode:"mclq", lang:"yue", exams:[], models:{chat:"auto", teach:"auto", mark:"auto"}}; }
+function langLine(what){
+  if(S.profile.lang !== "yue") return "";
+  return `\nLANGUAGE: Write ${what} in Hong Kong Cantonese (colloquial written Cantonese in Traditional Chinese, e.g. 係、唔、嘅、咁、啲), keeping every medical and scientific term, drug name, receptor, enzyme and unit in English. The student sits an English-language exam, so exam questions, cards, multiple-choice options and model answers stay in English.`;
+}
+function langSeg(id){ return `<div class="seg" role="group" aria-label="AI language" id="${id}">${[["en","English"],["yue","廣東話"]].map(([k, l]) => `<button aria-pressed="${S.profile.lang === k}" data-act="setLang" data-arg="${k}">${l}</button>`).join("")}</div>`; }
+const MODELS = {
+  auto:{label:"Auto (recommended)", short:"Auto"},
+  haiku:{label:"Fast · low reasoning", short:"Fast", id:"fast", tier:"quick"},
+  sonnet:{label:"Balanced · medium reasoning", short:"Balanced", id:"balanced", tier:"default"},
+  opus:{label:"Thorough · high reasoning, slower", short:"Thorough", id:"thorough", tier:"complex"},
+};
+function modelKey(k){ return (S.profile.models && S.profile.models[k]) || "auto"; }
+function modelOpts(k, defTier){ const m = MODELS[modelKey(k)] || MODELS.auto; if(!m.id) return defTier ? {modelTier:defTier} : {}; return {model:m.id, modelTier:m.tier}; }
+function modelSelect(k, id){ return `<select id="${id}" data-change="setModel" data-key="${k}" style="width:auto">${Object.entries(MODELS).map(([v, m]) => `<option value="${v}" ${modelKey(k) === v ? "selected" : ""}>${m.label}</option>`).join("")}</select>`; }
+function gid(p){ return (p||"") + Math.random().toString(36).slice(2,9) + Date.now().toString(36).slice(-4); }
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function dayKey(t){ const d = new Date(t ?? Date.now()); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function startOfDay(t){ const d = new Date(t); d.setHours(0,0,0,0); return d.getTime(); }
+function endOfToday(){ return startOfDay(Date.now()) + DAY - 1; }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function pct(n,d){ return d ? Math.round(100*n/d) : 0; }
+function plural(n,w){ return n + " " + w + (n===1 ? "" : "s"); }
+function relDay(t){ if(t==null) return "later"; const d = Math.round((startOfDay(t)-startOfDay(Date.now()))/DAY); if(d===0) return "today"; if(d===1) return "tomorrow"; if(d===-1) return "yesterday"; return d < 0 ? (-d) + " days ago" : "in " + d + " days"; }
+function fmtDate(t){ return t ? new Date(t).toLocaleDateString(undefined, {day:"numeric", month:"short", year:"numeric"}) : ""; }
+function fmtSize(b){ return b > 1048576 ? (b/1048576).toFixed(1) + " MB" : Math.max(1, Math.round(b/1024)) + " KB"; }
+function fmtIv(days){ if(days < 1) return "10m"; if(days < 30) return Math.round(days)+"d"; if(days < 365) return Math.round(days/30)+"mo"; return (days/365).toFixed(1)+"y"; }
+function deck(id){ return S.decks.find(d => d.id === id); }
+function section(d,id){ return d?.sections.find(s => s.id === id); }
+function thread(id){ return S.threads.find(t => t.id === id); }
+function course(id){ return (S.profile.courses || []).find(c => c.id === id); }
+function courseName(id){ return course(id)?.name || "Uncategorised"; }
+
+/* ---------- persistence ---------- */
+const W = {pending:new Map(), busy:new Set(), timers:new Map()};
+function setSync(state){
+  const el = document.getElementById("sync");
+  el.textContent = {local:"Saved on this device", synced:"Saved on Mac", saving:"Saving…", saved:"Saved on Mac", error:"Couldn't save. Check your connection."}[state] || "";
+  el.title = state === "local" ? "Saved in this browser" : "Saved in Recall Lab on this Mac";
+  el.classList.toggle("err", state === "error");
+}
+function lsSave(){ try{ localStorage.setItem(LS, JSON.stringify({decks:S.decks, profile:S.profile, threads:S.threads.filter(t => t.messages.length)})); }catch(e){} }
+function persist(id, data){
+  lsSave();
+  if(S.mode !== "db"){ lsSave(); return; }
+  clearTimeout(W.timers.get(id));
+  W.timers.set(id, setTimeout(() => { W.pending.set(id, data === null ? null : JSON.parse(JSON.stringify(data))); flush(id); }, 600));
+}
+async function flush(id){
+  if(W.busy.has(id) || !W.pending.has(id)) return;
+  const data = W.pending.get(id); W.pending.delete(id); W.busy.add(id); setSync("saving");
+  try{
+    const ref = db.collection("data/users/"+uid).doc(id);
+    if(data === null) await ref.delete(); else await ref.set(data);
+    setSync("saved");
+  }catch(e){
+    if(e && e.code === "unavailable"){ if(!W.pending.has(id)) W.pending.set(id, data); setTimeout(() => flush(id), 1500 + Math.random()*1500); }
+    else setSync("error");
+  }finally{ W.busy.delete(id); if(W.pending.has(id)) flush(id); }
+}
+function saveDeck(d){ persist(d.id, d); }
+function saveProfile(){ persist("profile", S.profile); }
+function saveThread(t){ persist(t.id, t); }
+
+async function savePages(deckId, pages){
+  PAGES[deckId] = pages;
+  if(S.mode !== "db"){ try{ localStorage.setItem(LS+"-src-"+deckId, JSON.stringify(pages)); }catch(e){} return; }
+  let part = 0, cur = {}, size = 0;
+  const write = (obj, p) => db.collection("data/users/"+uid).doc("src_"+deckId+"_"+p).set({kind:"source", deckId, part:p, pages:obj});
+  for(let i=0;i<pages.length;i++){
+    const t = (pages[i] || "").slice(0, 150000);
+    if(size + t.length > 150000 && size > 0){ await write(cur, part); part++; cur = {}; size = 0; }
+    cur[String(i+1)] = t; size += t.length;
+  }
+  await write(cur, part);
+}
+async function getPages(deckId){
+  if(PAGES[deckId]) return PAGES[deckId];
+  if(S.mode === "db"){
+    const snap = await db.collection("data/users/"+uid).where("deckId","==",deckId).get();
+    const arr = [];
+    snap.docs.forEach(doc => { const v = doc.data(); if(v && v.kind === "source") for(const k in v.pages) arr[Number(k)-1] = v.pages[k]; });
+    return PAGES[deckId] = arr;
+  }
+  try{ return PAGES[deckId] = JSON.parse(localStorage.getItem(LS+"-src-"+deckId)) || []; }catch(e){ return []; }
+}
+async function deletePages(deckId){
+  delete PAGES[deckId];
+  if(S.mode !== "db"){ try{ localStorage.removeItem(LS+"-src-"+deckId); }catch(e){} return; }
+  try{
+    const snap = await db.collection("data/users/"+uid).where("deckId","==",deckId).get();
+    for(const doc of snap.docs){ const v = doc.data(); if(v && v.kind === "source") await db.collection("data/users/"+uid).doc(doc.id).delete(); }
+  }catch(e){}
+}
+function migrate(){
+  S.profile = Object.assign(defProfile(), S.profile);
+  S.profile.models = Object.assign({chat:"auto", teach:"auto", mark:"auto"}, S.profile.models || {});
+  if(!S.profile.lang) S.profile.lang = "yue";
+  if(!Array.isArray(S.profile.exams)) S.profile.exams = [];
+  S.decks.forEach(d => {
+    d.added = d.added || d.created;
+    d.cards.forEach(c => { if(c.recalled == null) c.recalled = c.reps || 0; });
+    if(d.chat && d.chat.length){ const t = {kind:"thread", id:gid("t"), title:"Tutor · " + d.name, deckId:d.id, secId:null, messages:d.chat, created:Date.now(), updated:Date.now()}; S.threads.push(t); saveThread(t); }
+    if(d.chat){ delete d.chat; saveDeck(d); }
+  });
+  S.threads.sort((a,b) => b.updated - a.updated);
+}
+
+async function boot(){
+  let local = null;
+  try{ local = JSON.parse(localStorage.getItem(LS)); }catch(e){}
+  if(local){ S.decks = local.decks || []; S.profile = local.profile || defProfile(); S.threads = local.threads || []; }
+  migrate(); render(); setSync("local");
+  if(!window.claude || !window.claude.use){ S.ai = "none"; render(); return; }
+  claude.use("sample").then(async s => {
+    sample = s; S.ai = s ? "ready" : "none";
+    if(s){ try{ const l = await s.limits(); S.aiTools = !!l.tools; S.aiImages = !!l.images; }catch(e){} }
+    render();
+  });
+  claude.use("assets").then(a => { assets = a; render(); });
+  try{
+    const [d, u] = await Promise.all([claude.use("db"), claude.use("user")]);
+    const id = u ? await u.id() : null;
+    if(d && id){
+      db = d; uid = id;
+      const snap = await db.collection("data/users/"+uid).where("kind","in",["deck","profile","thread"]).get();
+      const decks = [], threads = []; let prof = null;
+      snap.docs.forEach(doc => { const v = doc.data(); if(!v) return; const o = JSON.parse(JSON.stringify(v)); if(v.kind === "deck") decks.push(o); else if(v.kind === "thread") threads.push(o); else prof = o; });
+      S.mode = "db";
+      if(!decks.length && !prof && S.decks.length){
+        S.decks.forEach(dk => saveDeck(dk)); saveProfile(); S.threads.forEach(t => t.messages.length && saveThread(t));
+        for(const dk of S.decks){ try{ const p = JSON.parse(localStorage.getItem(LS+"-src-"+dk.id)); if(p) await savePages(dk.id, p); }catch(e){} }
+      }else{
+        S.decks = decks.sort((a,b) => a.created - b.created); S.threads = threads; S.profile = prof || defProfile();
+        migrate();
+      }
+      setSync("synced");
+    }
+  }catch(e){ S.mode = "local"; setSync("local"); }
+  render();
+}
+
+/* ---------- cards & scheduling ---------- */
+function mkCard(raw, sec){
+  let type = String(raw.type || "basic").toLowerCase();
+  const bloom = Math.min(4, Math.max(1, parseInt(raw.bloom, 10) || 1));
+  if(!["basic","cloze","why","case","compare"].includes(type)) type = bloom === 1 ? "basic" : bloom === 2 ? "why" : bloom === 3 ? "case" : "compare";
+  const c = {id: gid("c"), sec, type, bloom, front: String(raw.front || "").trim(), back: String(raw.back || "").trim(),
+    points: Array.isArray(raw.points) ? raw.points.map(String).filter(Boolean).slice(0,5) : [],
+    ease: 2.5, interval: 0, reps: 0, recalled: 0, lapses: 0, due: null, blind: 0, created: Date.now()};
+  const wrong = Array.isArray(raw.wrong) ? raw.wrong.map(String).filter(Boolean).slice(0,3) : [];
+  if(raw.mcAnswer && wrong.length >= 2) c.mc = {a: String(raw.mcAnswer), wrong};
+  return c;
+}
+function isOpen(c){ return c.bloom >= 2 || OPEN_TYPES.includes(c.type); }
+function secure(c){ return c.reps >= 2 && c.interval >= 3 && (c.recalled || 0) >= 1; }
+function nextInterval(c, g, conf){
+  if(g === 1) return 0;
+  let iv;
+  if(g === 2) iv = c.reps === 0 ? 1 : Math.max(1, c.interval * 1.2);
+  else if(g === 3) iv = c.reps === 0 ? 1 : c.reps === 1 ? 3 : c.interval * c.ease;
+  else iv = c.reps === 0 ? 3 : c.reps === 1 ? 5 : c.interval * c.ease * 1.3;
+  if(conf === "unsure" && g >= 3) iv = Math.max(1, iv * 0.8);
+  return Math.round(iv * 10) / 10;
+}
+function schedule(c, g, conf, d){
+  const now = Date.now();
+  if(g === 1){
+    if(conf === "sure"){ c.blind = (c.blind || 0) + 1; c.ease = Math.max(1.3, c.ease - 0.3); }
+    else c.ease = Math.max(1.3, c.ease - 0.2);
+    if(c.reps > 0) c.lapses++;
+    c.reps = 0; c.interval = 0; c.due = now + 10*60000;
+  }else{
+    const iv = nextInterval(c, g, conf);
+    if(g === 2) c.ease = Math.max(1.3, c.ease - 0.15);
+    if(g === 4) c.ease += 0.15;
+    if(g >= 3 && c.blind && iv >= 3) c.blind = 0;
+    c.interval = iv; c.reps++; c.due = startOfDay(now + iv*DAY);
+    const cap = d && examCap(d);
+    if(cap && c.due > cap) c.due = cap;
+  }
+  c.last = now;
+}
+function bumpHistory(d){
+  const p = S.profile, t = dayKey();
+  p.history[t] = (p.history[t] || 0) + 1;
+  if(p.lastDay !== t){ p.streak = p.lastDay === dayKey(Date.now() - DAY) ? p.streak + 1 : 1; p.lastDay = t; }
+  const cutoff = dayKey(Date.now() - 90*DAY);
+  for(const k of Object.keys(p.history)) if(k < cutoff) delete p.history[k];
+  if(d) d.lastStudied = Date.now();
+}
+function streakNow(){ const p = S.profile; return (p.lastDay === dayKey() || p.lastDay === dayKey(Date.now()-DAY)) ? p.streak : 0; }
+
+/* ---------- lecture model ---------- */
+function activeSecs(d){ return d.sections.filter(s => s.priority !== "skip"); }
+function liveCards(d){ const skip = new Set(d.sections.filter(s => s.priority === "skip").map(s => s.id)); return d.cards.filter(c => !skip.has(c.sec)); }
+function dueCards(d){ const end = endOfToday(); return liveCards(d).filter(c => c.due != null && c.due <= end); }
+function l1Ready(d, s){ const l1 = d.cards.filter(c => c.sec === s.id && c.bloom === 1); return !l1.length || l1.filter(c => c.reps >= 1).length / l1.length >= 0.6; }
+function newL1(d, s){ return d.cards.filter(c => c.sec === s.id && c.bloom === 1 && c.due == null); }
+function practiceNew(d){ return liveCards(d).filter(c => { const s = section(d, c.sec); return c.bloom >= 2 && c.due == null && s && s.learned && l1Ready(d, s); }); }
+function secScore(d, s){
+  const cs = d.cards.filter(c => c.sec === s.id);
+  const has = !!s.lesson && s.learned;
+  const l1 = cs.filter(c => c.bloom === 1), l2 = cs.filter(c => c.bloom === 2), l34 = cs.filter(c => c.bloom >= 3);
+  const learn = s.learned ? 1 : 0;
+  const rem = l1.length ? l1.filter(secure).length / l1.length : (has ? 1 : 0);
+  const und = (l2.filter(secure).length + ((s.feyn || 0) >= 70 ? 1 : 0)) / (l2.length + 1);
+  const app = l34.length ? l34.filter(secure).length / l34.length : (has ? 1 : 0);
+  return {learn, rem, und, app, total: (learn + rem + und + app) / 4};
+}
+function progress(d){
+  const secs = activeSecs(d);
+  const acc = {learn:0, rem:0, und:0, app:0, total:0};
+  if(!secs.length) return acc;
+  secs.forEach(s => { const r = secScore(d, s); for(const k in acc) acc[k] += r[k]; });
+  for(const k in acc) acc[k] = Math.round(100 * acc[k] / secs.length);
+  return acc;
+}
+function nextStep(d){
+  const due = dueCards(d).length;
+  if(due) return {kind:"review", label:"Review " + plural(due, "due card"), sub:"Spaced recall comes first. These are the cards about to fade."};
+  const secs = activeSecs(d);
+  for(const s of secs) if(s.learned){ const n = newL1(d, s).length; if(n) return {kind:"lockin", sec:s.id, label:"Lock in “" + s.title + "”", sub: plural(n, "new recall card") + " from a section you've read"}; }
+  const nx = secs.find(s => !s.learned);
+  if(nx) return {kind:"learn", sec:nx.id, label:"Learn “" + nx.title + "”", sub:(nx.priority === "high" ? "High-yield. " : "") + "Read the key points and slides, then answer 2 quick checks."};
+  const f = secs.find(s => s.learned && (s.feyn || 0) < 70 && l1Ready(d, s));
+  if(f) return {kind:"feyn", sec:f.id, label:"Explain “" + f.title + "” in your own words", sub:"Feynman check. The AI finds the gaps in your explanation."};
+  const p = practiceNew(d).length;
+  if(p) return {kind:"practice", label:"Practise " + plural(p, "why / case / compare question"), sub:"Mixed across sections, so you learn to tell similar ideas apart."};
+  const pr = progress(d);
+  if(pr.total >= 100) return {kind:"done", label:"Exam-ready", sub:"Every section is secure. Keep up the short reviews, or take a mock quiz."};
+  const pend = liveCards(d).filter(c => !secure(c) && c.due != null);
+  const nd = pend.reduce((m,c) => Math.min(m, c.due), Infinity);
+  return {kind:"wait", label:"Next session " + relDay(isFinite(nd) ? nd : null), sub: plural(pend.length, "card") + " need one more correct recall on a later day to count as secure."};
+}
+
+/* ---------- AI ---------- */
+function aiOK(){ return S.ai === "ready" && !S.aiBlocked; }
+function aiMsg(e){
+  const c = e && e.code;
+  if(["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"].includes(c)) S.aiBlocked = true;
+  return ({
+    not_granted:"AI is switched off.",
+    sampling_disabled:"Codex isn't available. Check that the ChatGPT app is installed and signed in.",
+    rate_limited:"You've hit a usage limit. Wait a little, then try again.",
+    prompt_too_large:"That's too much material at once. Split it into one lecture at a time.",
+    invalid_json:"The AI's reply came back in the wrong format. Try again.",
+    refused:"Codex declined this request. Try rewording it or trimming the material.",
+    session_expired:"Sign in to the ChatGPT app (Codex) again, then retry.",
+    cancelled:"Stopped.",
+    image_rejected:"One of the images couldn't be read. Try a JPEG or PNG under 20 MB.",
+    empty_completion:"The AI returned nothing. Try again with less material.",
+  })[c] || (e && e.message ? "Codex: " + e.message : "Couldn't reach Codex. Try again.");
+}
+function aiNote(){
+  if(S.ai === "pending") return `<p class="small muted"><span class="spin"></span> Connecting to Codex…</p>`;
+  if(!aiOK()) return `<p class="small muted">AI features need Codex: install the ChatGPT app, sign in, then restart <code>npm start</code>.</p>`;
+  return "";
+}
+const CARD_SPEC = `   bloom 1 Remember: type "basic" (question → answer of 20 words or fewer) or "cloze" (a sentence with the key term replaced by "____"; back = the missing term). About half the cards.
+   bloom 2 Understand: type "why", asking why or how a mechanism works.
+   bloom 3 Apply: type "case", a 1-3 sentence clinical scenario asking to predict an effect, adverse effect, interaction or compensation.
+   bloom 4 Analyse & Evaluate: type "compare", comparing or choosing between options with justification.
+   For bloom 2-4 the back is a model answer of 70 words or fewer, and "points" lists 2-4 key points a marker would check. One idea per card; fronts 35 words or fewer.
+   Every card also has a multiple-choice version: "mcAnswer" = the correct answer in 20 words or fewer, and "wrong" = 3 plausible but clearly incorrect options of similar length and style (commonly confused drugs, receptors, directions of change or mechanisms).`;
+
+function outlinePrompt(text, focus, kind){
+  return `You are planning a revision path for a university student (pharmacology / human physiology) who has forgotten this lecture and needs to learn it for an exam.
+The material is a ${kind} split with [Page N] markers.
+
+EXAM FOCUS FROM THE STUDENT (what the professor emphasised or said to skip; may be empty):
+${focus || "(none given)"}
+
+Split the material into 3-12 teachable sections, in the order they appear. Each section is one coherent topic over a contiguous page range.
+Priority:
+- "high": the professor emphasised it, or it is classic exam material (mechanisms, drug classes, key physiology, clinical relevance)
+- "normal": supporting content
+- "skip": the professor said it won't be examined, or it is title/admin/references/history pages with nothing examinable
+
+Reply with only JSON: {"title":"short lecture name","sections":[{"title":"...","pages":[first,last],"priority":"high","why":"one short reason"}]}
+
+MATERIAL:
+${text}`;
+}
+function lessonPrompt(d, s, text){
+  const n = s.priority === "high" ? 12 : 7;
+  return `You are a professor teaching a university student who has forgotten this section and must learn it for an exam in pharmacology / human physiology.
+LECTURE: ${d.name}
+SECTION: ${s.title}${s.pages ? " (pages " + s.pages[0] + "-" + s.pages[1] + ")" : ""}, priority: ${s.priority}
+EXAM FOCUS FROM THE STUDENT: ${d.focus || "(none)"}
+${d.studio?.focusOnly ? "Only teach the listed key concepts. Omit unrelated material and excluded topics." : ""}
+
+SOURCE TEXT FOR THIS SECTION:
+${text || "(source unavailable: state this and do not invent facts)"}
+
+Write:
+1. "keyPoints": 4-8 key points a student must know, one sentence each, exam-focused, with specifics (receptor subtypes, ↑/↓, numbers, units). Start a point with "★ " if the exam focus emphasises it.
+2. "explain": a plain-language explanation that links the key points as cause and effect, 120-200 words, no unexplained jargon.
+3. "hook": one memory aid (mnemonic, analogy or contrast), one sentence.
+4. "checks": 2 short questions testing understanding of the explanation, each with a one-sentence answer.
+5. "cards": about ${n} spaced-repetition cards that together cover every key point, across Bloom levels:
+${CARD_SPEC}
+Use only the supplied source. Add [p. N] to every explanation paragraph, key point and answer, using the exact source page. Label any suspected source error for checking; never silently replace it with unsupported information.${langLine('"explain" and "hook" (keyPoints, checks and cards stay in English)')}
+
+Reply with only JSON: {"keyPoints":["..."],"explain":"...","hook":"...","checks":[{"q":"...","a":"..."}],"cards":[{"type":"basic","bloom":1,"front":"...","back":"...","points":[],"mcAnswer":"...","wrong":["...","...","..."],"sourcePages":[1]}]}`;
+}
+
+/* ---------- material intake ---------- */
+function loadScript(src){ return new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = () => rej(new Error("load")); document.head.appendChild(s); }); }
+async function pdfLib(){ if(!window.pdfjsLib) await loadScript(PDFJS); window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_W; return window.pdfjsLib; }
+async function pdfPages(file){
+  const lib = await pdfLib();
+  const doc = await lib.getDocument({data: await file.arrayBuffer(), isEvalSupported:false}).promise;
+  const pages = []; let total = 0;
+  for(let i=1;i<=doc.numPages;i++){
+    const tc = await (await doc.getPage(i)).getTextContent();
+    const t = tc.items.map(it => it.str + (it.hasEOL ? "\n" : " ")).join("").replace(/[ \t]+/g," ").trim();
+    pages.push(t); total += t.length;
+    S.add.status = "Reading page " + i + " of " + doc.numPages + "…"; setStatus();
+    if(total > 400000) break;
+  }
+  return pages;
+}
+function textPages(text){
+  const paras = text.split(/\n\s*\n/); const pages = []; let cur = "";
+  for(const p of paras){ if(cur.length + p.length > 3000 && cur){ pages.push(cur.trim()); cur = ""; } cur += p + "\n\n"; }
+  if(cur.trim()) pages.push(cur.trim());
+  return pages;
+}
+function joinPages(pages, from, to, cap){
+  let out = "";
+  for(let i=(from||1); i<=(to||pages.length) && i<=pages.length; i++){ out += "\n[Page " + i + "]\n" + (pages[i-1] || ""); if(out.length > cap) return out.slice(0, cap) + "\n[…truncated]"; }
+  return out;
+}
+function setStatus(){ const el = document.getElementById("addStatus"); if(el) el.innerHTML = S.add.busy ? `<span class="spin"></span> ${esc(S.add.status)}` : esc(S.add.status); }
+
+async function onFile(input){
+  const files = [...input.files]; if(!files.length) return;
+  const a = S.add; a.err = ""; a.images = []; a.pages = null; a.file = null; a.text = "";
+  if(files.every(f => f.type.startsWith("image/"))){
+    a.images = files.slice(0, 20); a.fileName = plural(a.images.length, "photo"); a.srcKind = "set of photos of notes or slides"; a.status = ""; render(); return;
+  }
+  const f = files[0]; a.fileName = f.name;
+  try{
+    if(f.type === "application/pdf" || /\.pdf$/i.test(f.name)){
+      a.busy = true; a.status = "Opening PDF…"; render();
+      a.pages = await pdfPages(f); a.srcKind = "PDF of lecture slides or notes"; a.file = f;
+      const chars = a.pages.join("").length;
+      a.status = plural(a.pages.length, "page") + " read." + (chars < 200 ? " Very little text found. If these are scanned slides, upload photos or screenshots instead." : "");
+    }else{
+      const t = await f.text(); a.pages = textPages(t); a.srcKind = "set of lecture notes"; a.status = plural(a.pages.length, "part") + " read.";
+    }
+    if(!a.name) a.name = f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ");
+  }catch(e){ a.err = "Couldn't read that file. Try another PDF, or paste the text instead."; a.pages = null; a.file = null; a.fileName = ""; }
+  a.busy = false; render();
+}
+async function keepFile(blob, type){
+  if(!assets) return null;
+  if(blob.size > 20*1048576){ toast("The file is over 20 MB, so only its text was kept."); return null; }
+  try{ const r = await assets.upload(blob, type ? {type} : undefined); return {id:r.id, size:r.sizeBytes}; }
+  catch(e){ toast("Couldn't keep a copy of the file. Its text was still saved."); return null; }
+}
+
+async function buildLecture(){
+  const a = S.add;
+  if(!aiOK()){ toast("AI isn't available in this view."); return; }
+  if(a.showPaste && a.text.trim() && !a.pages){ a.pages = textPages(a.text); a.srcKind = "set of lecture notes"; }
+  if(!a.pages && !a.images.length){ a.err = "Add a PDF, photos or pasted notes first."; render(); return; }
+  a.busy = true; a.err = ""; render();
+  try{
+    let pages = a.pages;
+    if(!pages){
+      a.status = "Reading your photos…"; setStatus();
+      const r = await sample(`Transcribe these ${a.images.length} images of lecture slides or handwritten notes into plain text. Start each image with [Page N] (N = image order, from 1). Keep headings and bullet structure, and copy labels from diagrams; describe each diagram in one line in [square brackets].`, {...modelOpts("ocr"), images: a.images});
+      pages = r.text.split(/\[Page\s+\d+\]/i).map(t => t.trim()).filter(Boolean);
+      if(!pages.length) pages = [r.text];
+    }
+    a.status = "Planning your revision path… (this can take up to a minute)"; setStatus();
+    const material = joinPages(pages, 1, pages.length, 150000);
+    const out = await sample.json(outlinePrompt(material, a.focus.trim(), a.srcKind || "set of lecture notes"), {...modelOpts("plan"), onText: ({text}) => { a.status = "Planning your revision path… " + text.length + " characters"; setStatus(); }});
+    const secs = (out && Array.isArray(out.sections) ? out.sections : []).filter(s => s && s.title).slice(0, 14);
+    if(!secs.length) throw {code:"invalid_json"};
+    let courseId = a.courseId || null;
+    if(a.courseId === "__new" && a.newCourse.trim()){ const c = {id:gid("k"), name:a.newCourse.trim().slice(0,60)}; S.profile.courses.push(c); courseId = c.id; saveProfile(); }
+    if(courseId === "__new") courseId = null;
+    const d = {kind:"deck", id: gid("d"), name: (a.name.trim() || out.title || "Untitled lecture").slice(0, 80), created: Date.now(), added: Date.now(), courseId,
+      focus: a.focus.trim(), srcKind: a.images.length ? "photos" : (a.srcKind.startsWith("PDF") ? "pdf" : "text"), pageCount: pages.length,
+      sections: secs.map(s => {
+        let p = Array.isArray(s.pages) ? s.pages.map(n => parseInt(n, 10)).filter(n => n > 0) : [];
+        if(p.length < 2) p = [p[0] || 1, p[0] || pages.length];
+        p = [Math.min(p[0], pages.length), Math.min(Math.max(p[0], p[1]), pages.length)];
+        return {id: gid("s"), title: String(s.title).slice(0, 80), pages: p, priority: ["high","normal","skip"].includes(s.priority) ? s.priority : "normal", why: String(s.why || ""), lesson: null, learned: false, checks: {}, feyn: 0};
+      }),
+      cards: []};
+    if(a.file){ a.status = "Saving your PDF to the library…"; setStatus(); const k = await keepFile(a.file, "application/pdf"); if(k) d.file = {id:k.id, name:a.file.name, size:k.size}; }
+    else if(a.images.length && assets){
+      a.status = "Saving your photos to the library…"; setStatus();
+      const ids = []; for(const im of a.images){ const k = await keepFile(im); if(!k){ ids.length = 0; break; } ids.push(k.id); }
+      if(ids.length) d.photos = ids;
+    }
+    await savePages(d.id, pages);
+    S.decks.push(d); saveDeck(d);
+    S.add = freshAdd();
+    openDeck(d.id);
+    const first = activeSecs(d)[0]; if(first) genLesson(d, first);
+  }catch(e){ a.busy = false; a.err = e && e.code ? aiMsg(e) : "Something went wrong saving the lecture. Try again."; a.status = ""; render(); }
+}
+
+async function genLesson(d, s){
+  if(s.lesson || (S.gen[s.id] && S.gen[s.id].busy) || !aiOK()) return;
+  S.gen[s.id] = {busy:true, chars:0, err:""}; refreshGen(s.id);
+  try{
+    const pages = await getPages(d.id);
+    const text = pages.length && s.pages ? joinPages(pages, s.pages[0], s.pages[1], 40000) : "";
+    const out = await sample.json(lessonPrompt(d, s, text), {...modelOpts("teach"), onText: ({text}) => { S.gen[s.id].chars = text.length; refreshGen(s.id); }});
+    s.lesson = {
+      keyPoints: (out.keyPoints || []).map(String).slice(0, 10),
+      explain: String(out.explain || ""), hook: String(out.hook || ""),
+      checks: (out.checks || []).filter(c => c && c.q).slice(0, 3).map(c => ({q:String(c.q), a:String(c.a || "")})),
+    };
+    d.cards.push(...(out.cards || []).map(raw => { const c=mkCard(raw,s.id);c.focusKey=d.focus||"";c.sourcePages=(raw.sourcePages||[]).map(Number).filter(p=>p>=s.pages[0]&&p<=s.pages[1]);return c; }).filter(c => c.front && c.back));
+    saveDeck(d);
+    S.gen[s.id] = {busy:false};
+  }catch(e){ S.gen[s.id] = {busy:false, err: aiMsg(e)}; }
+  if((S.view === "section" && S.secId === s.id) || S.view === "lecture") render();
+}
+function refreshGen(id){ const el = document.getElementById("gen-" + id); const g = S.gen[id]; if(el && g) el.innerHTML = g.busy ? `<span class="spin"></span> Preparing this section${g.chars ? " · " + g.chars + " characters written" : "…"}` : esc(g.err || ""); }
+function prefetchNext(d, s){ /* Generate only when requested: avoid speculative AI calls. */ }
+
+/* ---------- slides viewer ---------- */
+function slideSrc(d, n){ if(d.photos) return d.photos[n-1] ? "/_blob/" + d.photos[n-1] : null; return PIMG[d.id + ":" + n] || null; }
+async function loadSlides(d, s){
+  if(!d.file || !s.pages) return;
+  const key = d.id + ":" + s.id; if(loadSlides.busy === key) return; loadSlides.busy = key;
+  try{
+    if(!PDFDOC[d.id]){
+      const lib = await pdfLib();
+      const buf = await (await fetch("/_blob/" + d.file.id)).arrayBuffer();
+      PDFDOC[d.id] = await lib.getDocument({data:buf, isEvalSupported:false}).promise;
+    }
+    const doc = PDFDOC[d.id];
+    for(let n = s.pages[0]; n <= Math.min(s.pages[1], s.pages[0] + 11, doc.numPages); n++){
+      const k = d.id + ":" + n; if(PIMG[k]) continue;
+      const page = await doc.getPage(n); const v1 = page.getViewport({scale:1}); const vp = page.getViewport({scale: 1100 / v1.width});
+      const cv = document.createElement("canvas"); cv.width = vp.width; cv.height = vp.height;
+      await page.render({canvasContext: cv.getContext("2d"), viewport: vp}).promise;
+      const blob = await new Promise(r => cv.toBlob(r, "image/jpeg", 0.85));
+      PIMG[k] = URL.createObjectURL(blob);
+      const el = document.getElementById("pimg-" + n); if(el && S.secId === s.id) el.outerHTML = `<img id="pimg-${n}" src="${PIMG[k]}" alt="Slide ${n}">`;
+    }
+  }catch(e){ const el = document.getElementById("slidesErr"); if(el) el.textContent = "Couldn't show the slides here. Use Open PDF instead."; }
+  loadSlides.busy = null;
+}
+
+/* ---------- study sessions ---------- */
+function startSession(items, label, deckId, returnTo){
+  if(!items.length){ toast("Nothing to study here right now."); return; }
+  const t = newThread(deckId || items[0].d); t.title = "Practice · " + label;
+  S.session = {queue: items.map(({d,c}) => ({d, c})), idx:0, mode: S.profile.mode || "mclq", counts:{1:0,2:0,3:0,4:0}, mcRight:0, mcWrong:0, label, deckId, requeued:{}, blindHits:0, preparing:false, prepErr:"", thread:t, log:[], returnTo};
+  resetCard(); S.view = "study"; render(); window.scrollTo(0,0);
+  ensureMC();
+}
+function pairs(d, cards){ return cards.map(c => ({d:d.id, c:c.id})); }
+function reviewAll(){ const items = []; S.decks.forEach(d => items.push(...pairs(d, dueCards(d)))); startSession(shuffle(items), "Today's reviews", null); }
+function reviewDeck(d){ startSession(shuffle(pairs(d, dueCards(d))), "Review · " + d.name, d.id); }
+function lockIn(d, s){ startSession(pairs(d, newL1(d, s)), "Lock in · " + s.title, d.id); }
+function practise(d){ startSession(shuffle(pairs(d, practiceNew(d))).slice(0, 15), "Practise · " + d.name, d.id); }
+function blindDrill(){ const items = []; S.decks.forEach(d => items.push(...pairs(d, liveCards(d).filter(c => c.blind > 0)))); startSession(shuffle(items), "Blind spots", null); }
+function cur(){ const s = S.session; const it = s && s.queue[s.idx]; if(!it) return null; const d = deck(it.d); const c = d && d.cards.find(x => x.id === it.c); return c ? {d, c, it} : null; }
+function presentFor(c, it){
+  const m = S.session.mode;
+  if(it.force) return it.force;
+  if(m === "lq" || !c.mc) return "lq";
+  if(m === "mc") return "mc";
+  if(m === "mix") return Math.random() < (c.due == null ? 0.7 : 0.45) ? "mc" : "lq";
+  return c.mcOk ? "lq" : "mc";
+}
+function resetCard(){
+  const s = S.session; s.ctl && s.ctl.abort();
+  Object.assign(s, {phase:"ask", conf:null, typed:"", ai:null, aiErr:"", explain:"", explaining:false, ctl:null, picked:null, opts:null, present:"lq"});
+  skipMissing();
+  const k = cur(); if(!k) return;
+  s.present = presentFor(k.c, k.it);
+  if(s.present === "mc") s.opts = shuffle([{t:k.c.mc.a, ok:true}, ...k.c.mc.wrong.map(t => ({t, ok:false}))]);
+}
+function skipMissing(){ const s = S.session; while(s.idx < s.queue.length && !cur()) s.idx++; }
+function requeue(s, d, c, gap, force){ s.requeued[c.id] = (s.requeued[c.id] || 0) + 1; if(s.requeued[c.id] <= 3) s.queue.splice(Math.min(s.queue.length, s.idx + gap), 0, {d:d.id, c:c.id, force}); }
+async function ensureMC(){
+  const s = S.session; if(!s || s.mode === "lq" || !aiOK()) return;
+  const need = []; const seen = new Set();
+  s.queue.forEach(it => { const d = deck(it.d), c = d && d.cards.find(x => x.id === it.c); if(c && !c.mc && !seen.has(c.id)){ seen.add(c.id); need.push({d, c}); } });
+  if(!need.length) return;
+  const batch = need.slice(0, 30);
+  const firstNeeds = cur() && !cur().c.mc && s.phase === "ask";
+  s.preparing = firstNeeds; render();
+  try{
+    const r = await sample.json(`For each flashcard below, write a multiple-choice version for a university pharmacology / physiology student.
+"a" = the correct answer in 20 words or fewer. "wrong" = 3 plausible but clearly incorrect options of similar length and style (commonly confused drugs, receptors, directions of change or mechanisms).
+Reply with only a JSON array: [{"id":"...","a":"...","wrong":["...","...","..."]}]
+CARDS:
+${batch.map(({c}) => "[" + c.id + "] Q: " + c.front + " | A: " + c.back).join("\n")}`, modelOpts("mark", "quick"));
+    const touched = new Set();
+    (Array.isArray(r) ? r : []).forEach(x => { const m = batch.find(b => b.c.id === String(x.id)); const w = Array.isArray(x.wrong) ? x.wrong.map(String).filter(Boolean).slice(0,3) : []; if(m && x.a && w.length >= 2){ m.c.mc = {a:String(x.a), wrong:w}; touched.add(m.d); } });
+    touched.forEach(saveDeck);
+  }catch(e){ s.prepErr = aiMsg(e); }
+  if(S.session !== s) return;
+  s.preparing = false;
+  if(s.phase === "ask" && s.picked == null && !s.typed) resetCard();
+  render();
+}
+function setMode(m){
+  const s = S.session; S.profile.mode = m; saveProfile();
+  if(s){ s.mode = m; if(s.phase === "ask" && s.picked == null && !s.typed.trim()){ const it = cur()?.it; if(it) delete it.force; resetCard(); } ensureMC(); }
+  render();
+}
+function mcPick(i){
+  const s = S.session, k = cur(); if(!k || s.picked != null || !s.opts) return;
+  s.picked = i; s.opts[i].ok ? s.mcRight++ : s.mcWrong++;
+  render();
+}
+function mcGrade(g){
+  const s = S.session, k = cur(); if(!k || s.picked == null) return;
+  const {d, c} = k;
+  bumpHistory(d);
+  s.log.push({q:c.front, r:"MC " + (s.opts[s.picked].ok ? "correct" : "wrong") + ", rated " + ["","Again","Hard","Good","Easy"][g]});
+  if(s.mode === "mclq"){
+    if(g === 1) requeue(s, d, c, 3, "mc");
+    else { c.mcOk = true; requeue(s, d, c, 3, "lq"); }
+  }else{
+    schedule(c, g, null, d); s.counts[g]++;
+    if(g >= 2) c.mcOk = true; else requeue(s, d, c, 4, "mc");
+  }
+  saveDeck(d); saveProfile();
+  s.idx++; resetCard(); render();
+}
+function grade(g){
+  const s = S.session, k = cur(); if(!k) return;
+  const {d, c} = k;
+  if(g === 1 && s.conf === "sure") s.blindHits++;
+  schedule(c, g, s.conf, d); bumpHistory(d);
+  if(g >= 3) c.recalled = (c.recalled || 0) + 1;
+  s.counts[g]++;
+  s.log.push({q:c.front, r:"written, rated " + ["","Again","Hard","Good","Easy"][g] + (s.ai && s.ai !== "loading" ? " (AI score " + s.ai.score + ")" : "")});
+  if(g === 1) requeue(s, d, c, 4, "lq");
+  saveDeck(d); saveProfile();
+  s.idx++; resetCard(); render();
+}
+function reveal(conf){ const s = S.session; if(conf) s.conf = conf; if(!s.conf) s.conf = "unsure"; s.phase = "answer"; render(); }
+async function checkAnswer(){
+  const s = S.session, k = cur(); if(!k) return;
+  if(!s.typed.trim()){ toast("Type your answer first."); return; }
+  if(!s.conf) s.conf = "unsure";
+  s.phase = "answer"; s.ai = "loading"; render();
+  const ctl = new AbortController(); s.ctl = ctl; const idx = s.idx; const {c} = k;
+  try{
+    const r = await sample.json(`You are marking a university student's answer in pharmacology / human physiology. Be strict on facts and generous on wording.
+QUESTION: ${c.front}
+MODEL ANSWER: ${c.back}
+KEY POINTS:
+${c.points.length ? c.points.map((p,i) => (i+1) + ". " + p).join("\n") : "(use the model answer)"}
+STUDENT ANSWER: ${s.typed}
+The student may answer in English, Cantonese or a mix; mark the content, not the language.${langLine('"feedback", "got", "missed" and "errors"')}
+
+Reply with only JSON: {"score":0-100,"got":["key points covered"],"missed":["key points missing or too vague"],"errors":["factual mistakes, empty if none"],"feedback":"one or two direct sentences on the single most important fix"}`, {...modelOpts("mark", "quick"), signal:ctl.signal});
+    if(S.session !== s || s.idx !== idx) return;
+    s.ai = {score: Math.max(0, Math.min(100, Number(r.score) || 0)), got: r.got || [], missed: r.missed || [], errors: r.errors || [], feedback: String(r.feedback || "")};
+  }catch(e){ if(S.session !== s || s.idx !== idx || e.code === "cancelled") return; s.ai = null; s.aiErr = aiMsg(e); }
+  render();
+}
+function suggested(){ const a = S.session.ai; if(!a || a === "loading") return 0; return a.score < 40 ? 1 : a.score < 70 ? 2 : a.score < 92 ? 3 : 4; }
+async function explainCard(){
+  const s = S.session, k = cur(); if(!k || s.explaining) return;
+  s.explaining = true; s.explain = ""; render();
+  const idx = s.idx; const ctl = new AbortController(); s.ctl = ctl;
+  try{
+    await sample(`A university student revising pharmacology / physiology wants this card explained more deeply.
+CARD: ${k.c.front}
+ANSWER: ${k.c.back}
+In 150 words or fewer: explain WHY it is true (the mechanism step by step), link it to one clinical consequence, then end with a line starting "Memory hook:" giving a mnemonic or vivid analogy (keep the mnemonic itself in English). Plain text, no headings.${langLine("the explanation")}`, {...modelOpts("mark", "quick"), signal:ctl.signal, onText: ({text}) => { if(S.session === s && s.idx === idx){ s.explain = text; const el = document.getElementById("explain"); if(el) el.textContent = text; } }});
+  }catch(e){ if(e.code !== "cancelled" && S.session === s && s.idx === idx) s.explain = aiMsg(e); }
+  if(S.session === s && s.idx === idx){ s.explaining = false; render(); }
+}
+
+/* ---------- Feynman ---------- */
+async function feynCheck(){
+  const f = S.feyn; const d = deck(f.deckId), sc = section(d, f.secId);
+  if(f.text.trim().length < 40){ toast("Write a few sentences first."); return; }
+  f.busy = true; f.err = ""; f.result = null; render();
+  const refs = [...(sc.lesson ? sc.lesson.keyPoints : []), ...d.cards.filter(c => c.sec === sc.id).slice(0, 12).map(c => c.front + " → " + c.back)].join("\n");
+  try{
+    const r = await sample.json(`You are a demanding but kind tutor running the Feynman technique with a university pharmacology / physiology student.
+CONCEPT: ${sc.title}
+REFERENCE FACTS (from their lecture):
+${refs || "(standard textbook content)"}
+EXAM FOCUS: ${d.focus || "(none)"}
+
+THE STUDENT'S EXPLANATION (they were asked to explain it simply, as if to a first-year student):
+${f.text}
+
+Judge factual accuracy, completeness of the mechanism (cause → effect), and whether it is in plain language. The explanation may be in English, Cantonese or a mix; judge the understanding, not the language.${langLine('"nailed", "gaps", "errors", "jargon", "clearer" and "followUp" (newCards stay in English)')}
+Reply with only JSON: {"score":0-100,"nailed":["what they explained well"],"gaps":["important steps or ideas missing"],"errors":["anything wrong"],"jargon":["terms used without explaining them"],"clearer":"a clearer plain-language explanation, 120 words or fewer","followUp":"one probing why / what-if question","newCards":[{"type":"basic|cloze|why|case|compare","bloom":1,"front":"...","back":"...","points":["..."],"mcAnswer":"...","wrong":["...","...","..."],"sourcePages":[1]}]}
+newCards target only the gaps and errors, at most 5.`, modelOpts("teach"));
+    f.result = {score: Math.max(0, Math.min(100, Number(r.score) || 0)), nailed: r.nailed || [], gaps: r.gaps || [], errors: r.errors || [], jargon: r.jargon || [], clearer: String(r.clearer || ""), followUp: String(r.followUp || ""),
+      newCards: (r.newCards || []).map(c => mkCard(c, sc.id)).filter(c => c.front && c.back), added:false};
+    sc.feyn = Math.max(sc.feyn || 0, f.result.score); bumpHistory(d); saveDeck(d); saveProfile();
+  }catch(e){ f.err = aiMsg(e); }
+  f.busy = false; render();
+}
+
+/* ---------- mock quiz ---------- */
+async function quizGen(){
+  const q = S.quiz, d = deck(q.deckId);
+  const pool = liveCards(d).filter(c => section(d, c.sec)?.learned);
+  if(pool.length < 3){ toast("Learn a few sections first. The quiz uses cards from sections you've read."); return; }
+  const weak = pool.slice().sort((a,b) => (b.lapses*2 + b.blind*3 - b.ease) - (a.lapses*2 + a.blind*3 - a.ease)).slice(0, Math.ceil(q.count/2));
+  const rest = shuffle(pool.filter(c => !weak.includes(c))).slice(0, q.count - weak.length);
+  const pick = shuffle([...weak, ...rest]);
+  q.busy = true; q.err = ""; render();
+  try{
+    const r = await sample.json(`Write ${pick.length} multiple-choice questions for a university pharmacology / physiology exam, one per card below.
+Prefer application-style stems (a short clinical scenario or "what happens if") over pure recall. Each question has 4 options and one correct answer. Distractors must be plausible: related drugs, receptors or mechanisms a student could confuse.
+EXAM FOCUS: ${d.focus || "(none)"}
+CARDS:
+${pick.map(c => "[" + c.id + "] Q: " + c.front + " | A: " + c.back).join("\n")}
+Questions and options are in English.${langLine('only "why"')}
+
+Reply with only a JSON array: [{"cardId":"...","q":"...","options":["...","...","...","..."],"answer":0,"why":"1-2 sentences: why the answer is right and why the most tempting distractor is wrong"}]`, modelOpts("quiz"));
+    q.qs = (Array.isArray(r) ? r : []).filter(x => x && x.q && Array.isArray(x.options) && x.options.length >= 2).map(x => ({cardId: String(x.cardId || ""), q: String(x.q), opts: shuffle(x.options.map((t, i) => ({t: String(t), ok: i === Number(x.answer)}))), why: String(x.why || "")}));
+    if(!q.qs.length) throw {code:"invalid_json"};
+    q.i = 0; q.picked = null; q.score = 0; q.wrong = [];
+  }catch(e){ q.err = aiMsg(e); }
+  q.busy = false; render();
+}
+function quizPick(i){
+  const q = S.quiz; if(q.picked != null) return;
+  q.picked = i; const item = q.qs[q.i];
+  if(item.opts[i].ok) q.score++;
+  else{ q.wrong.push(item); const d = deck(q.deckId); const c = d.cards.find(x => x.id === item.cardId); if(c && c.due != null){ c.due = Date.now(); c.ease = Math.max(1.3, c.ease - 0.1); saveDeck(d); } }
+  render();
+}
+
+/* ---------- chat (Ask AI + lecture tutor) ---------- */
+function newThread(deckId, secId){ return {kind:"thread", id:gid("t"), title:"New chat", deckId:deckId || null, secId:secId || null, messages:[], created:Date.now(), updated:Date.now()}; }
+function lectureRules(d, t, ctxText){
+  const secs = d.sections.map(s => `- [${s.id}] ${s.title}${s.pages ? " (p." + s.pages[0] + "-" + s.pages[1] + ")" : ""} · priority ${s.priority} · ${s.learned ? "learned" : "not learned yet"}${s.lesson ? "\n  key points: " + s.lesson.keyPoints.join(" / ") : ""}`).join("\n");
+  return `You are the student's personal tutor inside a revision app, for a university lecture in pharmacology / human physiology. Be accurate, concise and exam-focused; explain mechanisms as cause → effect; use plain language and short paragraphs; no markdown headings or tables. When useful, end with one quick question that makes the student recall something.
+LECTURE: ${d.name} (course: ${courseName(d.courseId)})
+EXAM FOCUS NOTES (from the student): ${d.focus || "(none yet)"}
+SECTIONS (id in brackets):
+${secs}${ctxText}
+TODAY IS ${dayKey()}. THE STUDENT'S EXAMS:
+${examsText()}
+${S.aiTools ? `You can change the app for the student with tools:
+- When they tell you what the professor emphasised, or that something won't be examined, call set_section_priority for the matching section(s) and add_exam_focus with a short note. Confirm what you changed.
+- When they ask you to make cards, call add_cards.
+Only change things the student asked for.` : "You cannot change the app. If the student tells you what will or won't be examined, tell them to set it with the High / Normal / Skip buttons on the lecture's Path tab."}`;
+}
+function generalRules(){
+  const list = S.decks.map(d => `- ${d.name} (${courseName(d.courseId)}, ${progress(d).total}% revised): ${activeSecs(d).map(s => s.title).join("; ")}`).join("\n");
+  return `You are a study assistant for a university student revising pharmacology and human physiology (medical / biomedical level). Answer accurately and concisely; explain mechanisms as cause → effect with exam-relevant specifics; use plain language and short paragraphs; no markdown headings or tables. If the student asks how to revise, base advice on evidence (retrieval practice, spacing, interleaving, elaboration) and on their lectures below. When useful, end with one quick recall question.
+THE STUDENT'S LECTURES IN THIS APP:
+${list || "(none yet)"}
+TODAY IS ${dayKey()}. THE STUDENT'S EXAMS:
+${examsText()}
+When they ask what to do or how to prepare, plan from these dates and their progress: learn unread sections first (finishing 3 days before the exam), keep up daily spaced reviews, use Feynman explanations for mechanisms, and spend the last days on mock questions and blind spots.`;
+}
+function chatTools(d){
+  if(!d || !S.aiTools) return undefined;
+  const note = (t, msg) => { t.messages.push({role:"tool", content:msg}); render(); scrollChat(); };
+  return (t) => [
+    {name:"set_section_priority", description:"Set a section's exam priority. high = emphasised / likely examined, normal, skip = not examined (its cards are hidden). Returns the updated section.",
+     inputSchema:{type:"object", properties:{section_id:{type:"string"}, priority:{type:"string", enum:["high","normal","skip"]}, reason:{type:"string"}}, required:["section_id","priority"]},
+     execute(inp){ const s = section(d, String(inp.section_id)); if(!s) throw new Error("No section with that id"); const p = String(inp.priority); if(!["high","normal","skip"].includes(p)) throw new Error("Bad priority"); s.priority = p; if(inp.reason) s.why = String(inp.reason).slice(0, 160); saveDeck(d); note(t, "Set “" + s.title + "” to " + p); return {ok:true, title:s.title, priority:p}; }},
+    {name:"add_exam_focus", description:"Append a short note to the lecture's exam focus notes (what the professor said). Returns ok.",
+     inputSchema:{type:"object", properties:{note:{type:"string"}}, required:["note"]},
+     execute(inp){ const n = String(inp.note || "").trim(); if(!n) throw new Error("Empty note"); d.focus = (d.focus ? d.focus + "\n" : "") + "• " + n; saveDeck(d); note(t, "Added to exam focus: " + n); return {ok:true}; }},
+    {name:"add_cards", description:"Add up to 6 flashcards to a section. bloom 1 basic/cloze, 2 why, 3 case, 4 compare. For bloom 2-4 include points (2-4 marker key points). Include mcAnswer and 3 wrong options for multiple choice. Returns how many were added.",
+     inputSchema:{type:"object", properties:{section_id:{type:"string"}, cards:{type:"array", items:{type:"object", properties:{type:{type:"string"}, bloom:{type:"integer"}, front:{type:"string"}, back:{type:"string"}, points:{type:"array", items:{type:"string"}}, mcAnswer:{type:"string"}, wrong:{type:"array", items:{type:"string"}}}, required:["front","back"]}}}, required:["section_id","cards"]},
+     execute(inp){ const s = section(d, String(inp.section_id)); if(!s) throw new Error("No section with that id"); const cs = (Array.isArray(inp.cards) ? inp.cards : []).slice(0, 6).map(c => mkCard(c, s.id)).filter(c => c.front && c.back); d.cards.push(...cs); saveDeck(d); note(t, "Added " + plural(cs.length, "card") + " to “" + s.title + "”"); return {added: cs.length}; }},
+  ];
+}
+async function sendChat(t, preset){
+  const ch = S.chat;
+  const text = (preset ?? ch.input).trim(); if(!text || ch.busy) return;
+  if(!aiOK()){ toast("AI isn't available in this view."); return; }
+  if(!S.threads.includes(t)) S.threads.unshift(t);
+  if(preset == null) ch.input = "";
+  ch.busy = true; ch.threadId = t.id; ch.stream = ""; ch.err = "";
+  let live = null;
+  if(S.view === "study" && S.session && S.session.thread === t){ live = studyContext(); const k = cur(); if(k) t.deckId = k.d.id; }
+  t.messages.push(live ? {role:"user", content:text, ctx:live.label, ctxText:live.text} : {role:"user", content:text});
+  if(t.title === "New chat") t.title = text.replace(/\s+/g, " ").slice(0, 60);
+  t.updated = Date.now(); render(); scrollChat();
+  const d = t.deckId && deck(t.deckId);
+  let rules;
+  if(d){
+    let ctxText = "";
+    const s = t.secId && section(d, t.secId);
+    ctxText = "SOURCE EXCERPTS:\n" + await relevantSourceContext(d, t.secId, text);
+    rules = lectureRules(d, t, ctxText);
+  }else rules = generalRules();
+  if(d?.studio?.focusOnly && d.focus) rules += "\nREVISION SCOPE: Only discuss these Professor key concepts unless the student explicitly asks to expand: " + d.focus;
+  rules += langLine("your replies") + (S.profile.lang === "yue" ? " If the student asks for an exam-style answer, a model answer or a quiz question, write that part in English and explain around it in Cantonese." : "");
+  rules += `\nSome student messages start with a [SCREEN SNAPSHOT] of what they are looking at in the app (the card, their answer, marking, and how this session has gone). Use it so they never have to repeat the question. If the snapshot says they have not answered yet, give hints or guiding questions, not the answer, unless they ask for it.`;
+  const hist = t.messages.filter(m => m.role !== "tool").slice(S.profile.chatMode === "actions" ? -12 : -6);
+  const lastCtx = hist.map((m, i) => m.ctxText ? i : -1).filter(i => i >= 0).slice(-1);
+  const turns = [{role:"user", content:rules}, ...hist.map((m, i) => ({role:m.role, content: m.ctxText ? (lastCtx.includes(i) ? m.ctxText : "[About the card: " + m.ctx + "]") + "\n\nSTUDENT'S MESSAGE: " + m.content : m.content}))];
+  const mk = chatTools(d);
+  const ctl = new AbortController(); ch.ctl = ctl;
+  try{
+    const opts = {cache:false, signal:ctl.signal, onText: ({text}) => { ch.stream = text; const el = document.getElementById("stream"); if(el){ el.textContent = text; scrollChat(); } }};
+    if(mk && S.profile.chatMode === "actions") opts.tools = mk(t);
+    const want = MODELS[modelKey("chat")];
+    Object.assign(opts, modelOpts("chat"), {intent:text});
+    const r = await sample(turns, opts);
+    const by = r.receipt?.model || want.short;
+    t.messages.push(by ? {role:"assistant", content:r.text, by} : {role:"assistant", content:r.text});
+  }catch(e){ if(e.text) t.messages.push({role:"assistant", content:e.text}); if(e.code !== "cancelled") ch.err = aiMsg(e); }
+  t.messages = t.messages.slice(-60); t.updated = Date.now();
+  ch.busy = false; ch.stream = ""; ch.ctl = null; saveThread(t);
+  S.threads.sort((a,b) => b.updated - a.updated);
+  render(); scrollChat();
+}
+function scrollChat(){ const el = document.getElementById("chatlog"); if(el) el.scrollTop = el.scrollHeight; }
+function studyContext(){
+  const s = S.session, k = cur(); const lines = [];
+  if(k){
+    const {d, c} = k; const sec = section(d, c.sec);
+    const answered = s.present === "mc" ? s.picked != null : s.phase === "answer";
+    lines.push(`[SCREEN SNAPSHOT: the student is practising "${s.label}". Card on screen: ${s.present === "mc" ? "multiple choice" : "written recall"}, L${c.bloom} ${LEVELS[c.bloom]}, lecture "${d.name}", section "${sec ? sec.title : ""}"]`);
+    lines.push("QUESTION: " + c.front);
+    if(s.present === "mc" && s.opts){ lines.push("OPTIONS: " + s.opts.map((o, i) => (i+1) + ") " + o.t).join("   ")); if(s.picked != null) lines.push("STUDENT PICKED: " + (s.picked+1) + ") " + s.opts[s.picked].t + " (" + (s.opts[s.picked].ok ? "correct" : "wrong") + ")"); }
+    if(s.typed && s.typed.trim()) lines.push("STUDENT'S WRITTEN ANSWER: " + s.typed.trim());
+    if(s.ai && s.ai !== "loading") lines.push(`AI MARKING: ${s.ai.score}/100; missed: ${s.ai.missed.join("; ") || "none"}; errors: ${s.ai.errors.join("; ") || "none"}`);
+    lines.push((answered ? "MODEL ANSWER: " : "MODEL ANSWER (hidden from the student, who has NOT answered yet): ") + c.back);
+    if(c.points.length) lines.push("KEY POINTS: " + c.points.join("; "));
+  }else lines.push(`[SCREEN SNAPSHOT: the student just finished the session "${s.label}"]`);
+  if(s.log.length) lines.push("EARLIER IN THIS SESSION: " + s.log.slice(-8).map(x => `"${x.q.slice(0, 90)}" → ${x.r}`).join(" | "));
+  return {label: k ? k.c.front.slice(0, 90) : "Session summary", text: lines.join("\n").slice(0, 4000)};
+}
+function withSide(main){
+  const tog = `<div class="row" style="justify-content:flex-end;margin-bottom:-8px"><button class="btn sm" data-act="toggleSplit" aria-pressed="${S.split}">${S.split ? "Hide AI panel" : "Ask AI alongside"}</button></div>`;
+  if(!S.split) return tog + main;
+  const t = activeThread(); const study = S.view === "study";
+  const sugg = study ? ["Give me a hint", "Why is this the answer?", "Give me a mnemonic for this", "Explain why the other options are wrong", "What have I been getting wrong?"]
+    : ["Explain this more simply", "Give me an analogy", "What would an exam question on this look like?"];
+  return tog + `<div class="studywrap"><div style="min-width:0">${main}</div>
+    <aside class="panel side-chat stack" style="gap:10px;padding:16px">
+      <div class="row between"><h3>Ask AI</h3>${t.messages.length ? `<button class="btn ghost sm" data-act="newSideChat">New chat</button>` : ""}</div>
+      <p class="small muted">${study ? "It sees the card on screen, your answer and how this session is going. Just ask." : "It sees this section and the text of its slides."}</p>
+      ${chatPanel(t, sugg, true)}
+    </aside></div>`;
+}
+function chatPanel(t, sugg, compact){
+  const ch = S.chat; const busy = ch.busy && ch.threadId === t.id;
+  const d = t.deckId && deck(t.deckId); const s = d && t.secId && section(d, t.secId);
+  return `<div class="stack" style="gap:14px">
+    <div class="chat" id="chatlog">
+      ${t.messages.length ? "" : `<div class="stack" style="gap:10px;padding:${compact ? "4px" : "20px"} 0">${compact ? "" : `<p class="muted">${d ? "Ask anything about this lecture, or tell me what your professor said will be examined." : "Ask anything: a concept you don't get, a comparison, a revision plan, or a quick quiz."}</p>`}<div class="row" style="gap:6px">${sugg.map(x => `<button class="btn sm" data-act="suggest" data-arg="${esc(x)}">${esc(x)}</button>`).join("")}</div></div>`}
+      ${t.messages.map(m => `${m.ctx ? `<div class="msg-ctx">On card: ${esc(m.ctx)}</div>` : ""}<div class="msg ${m.role}">${m.role === "tool" ? "✓ " : ""}${esc(m.content)}${m.by ? `<div class="small muted" style="margin-top:6px">${esc(m.by)}</div>` : ""}</div>`).join("")}
+      ${busy ? `<div class="msg assistant" id="stream">${ch.stream ? esc(ch.stream) : `<span class="spin"></span> Thinking…`}</div>` : ""}
+    </div>
+    ${ch.err && ch.threadId === t.id ? `<p class="small" style="color:var(--bad)">${esc(ch.err)}</p>` : ""}
+    ${s ? `<div class="row small" style="gap:6px"><span class="chip accent">About: ${esc(s.title)}</span><button class="btn ghost sm" data-act="clearCtx">Remove</button></div>` : ""}
+    <div class="composer">
+      <textarea id="chatin" data-bind="chat.input" placeholder="${d ? "Ask about " + esc(d.name) + ", or tell me what your professor said…" : "Ask a question…"}" ${aiOK() ? "" : "disabled"}>${esc(ch.input)}</textarea>
+      ${busy ? `<button class="btn" data-act="stopChat">Stop</button>` : `<button class="btn primary" data-act="sendChat" ${aiOK() && !ch.busy ? "" : "disabled"}>Send</button>`}
+    </div>
+    <div class="row between" style="gap:8px"><div class="row" style="gap:8px"><label class="row small muted" style="gap:6px;flex-wrap:nowrap">Model ${modelSelect("chat", compact ? "chatmodel-side" : "chatmodel")}</label>${langSeg(compact ? "lang-side" : "lang-main")}</div><span class="small muted"><span class="kbd">Enter</span> to send · <span class="kbd">Shift</span>+<span class="kbd">Enter</span> new line</span></div>
+    ${modelKey("chat") === "opus" ? `<p class="small muted">Thorough answers more carefully but takes longer and uses more of your ChatGPT usage.</p>` : ""}
+    ${aiNote()}
+  </div>`;
+}
+function activeThread(){
+  if(S.view === "study" && S.session) return S.session.thread;
+  if(S.view === "section"){ const d = deck(S.deckId); let t = thread(S.secThread[S.secId]) || S.secTemp[S.secId]; if(!t){ t = S.threads.find(x => x.secId === S.secId && x.deckId === d.id) || newThread(d.id, S.secId); S.secThread[S.secId] = t.id; if(!S.threads.includes(t)) S.secTemp[S.secId] = t; } return t; }
+  if(S.view === "ask"){ let t = thread(S.askId) || (S.askTemp && S.askTemp.id === S.askId ? S.askTemp : null); if(!t){ t = S.threads[0] || newThread(); S.askId = t.id; if(!S.threads.includes(t)) S.askTemp = t; } return t; }
+  if(S.view === "lecture"){ const d = deck(S.deckId); let id = S.tutorId[d.id]; let t = thread(id) || (S.tutorTemp && S.tutorTemp.id === id ? S.tutorTemp : null); if(!t){ t = S.threads.find(x => x.deckId === d.id) || newThread(d.id); S.tutorId[d.id] = t.id; if(!S.threads.includes(t)) S.tutorTemp = t; } return t; }
+  return null;
+}
+
+/* ---------- views ---------- */
+function ring(p, big){ return `<div class="ring${big ? " big" : ""}" style="--p:${p}"><b>${p}%</b></div>`; }
+function stepBars(pr){ return `<div class="steps4">${[["Learn",pr.learn],["Remember",pr.rem],["Understand",pr.und],["Apply",pr.app]].map(([l,v]) => `<div><span>${l}</span><div class="bar"><i style="width:${v}%"></i></div></div>`).join("")}</div>`; }
+function prioChip(p){ return p === "high" ? `<span class="chip accent">High-yield</span>` : p === "skip" ? `<span class="chip skip">Skip</span>` : ""; }
+function lvChip(b){ return `<span class="chip">L${b} · ${LEVELS[b]}</span>`; }
+function fileLink(d, label){ if(d.file) return `<a class="btn sm" href="/_blob/${esc(d.file.id)}" target="_blank" rel="noopener">${label || "Open PDF"}</a>`; return ""; }
+function lectureRow(d){ const pr = progress(d), ns = nextStep(d); const idle = ns.kind === "wait" || ns.kind === "done";
+  return `<div class="panel lect">${ring(pr.total)}
+    <div style="min-width:0"><h3>${esc(d.name)}</h3><p class="small muted">${esc(courseName(d.courseId))} · ${plural(activeSecs(d).length, "section")}${d.lastStudied ? " · studied " + relDay(d.lastStudied) : ""}</p>${stepBars(pr)}</div>
+    <div class="go stack" style="gap:6px;align-items:flex-end"><button class="btn ${idle ? "" : "primary"}" data-act="open" data-arg="${d.id}">${idle ? "Open" : "Continue"}</button><span class="small muted" style="text-align:right">${esc(ns.label)}</span></div></div>`; }
+
+const V = {};
+V.today = () => {
+  const due = S.decks.reduce((n, d) => n + dueCards(d).length, 0);
+  const blind = S.decks.reduce((n, d) => n + liveCards(d).filter(c => c.blind > 0).length, 0);
+  const today = S.profile.history[dayKey()] || 0;
+  const strip = Array.from({length:14}, (_, i) => { const v = S.profile.history[dayKey(Date.now() - (13 - i)*DAY)] || 0; return `<i data-v="${v === 0 ? 0 : v < 15 ? 1 : v < 40 ? 2 : 3}" title="${v} answers"></i>`; }).join("");
+  const dateStr = new Date().toLocaleDateString(undefined, {weekday:"long", day:"numeric", month:"long"});
+  if(!S.decks.length) return `<div class="stack">
+    <div class="panel stack" style="padding:30px">
+      <span class="eyebrow">${esc(dateStr)}</span>
+      <h1>Upload a lecture you've forgotten.<br>Finish it exam-ready.</h1>
+      <p class="muted prose">Recall Lab turns a lecture PDF into a guided path. It teaches each section, then tests you, first with multiple choice to clear the concept and then with written recall, until every key point is secure. Tell it what your professor said will be examined, and it leaves out the rest.</p>
+      <div class="row"><button class="btn primary lg" data-act="nav" data-arg="add">Add a lecture</button><button class="btn lg" data-act="sample">Try a sample lecture</button></div>
+      ${aiNote()}
+    </div>
+    ${loopPanel()}
+  </div>`;
+  const recent = S.decks.slice().sort((a,b) => (b.lastStudied || b.added || 0) - (a.lastStudied || a.added || 0)).slice(0, 5);
+  return `<div class="stack">
+    <div class="hero">
+      <div class="panel stack">
+        <span class="eyebrow">${esc(dateStr)}</span>
+        <div class="row" style="align-items:flex-end;gap:14px"><span class="bignum">${due}</span><span class="muted" style="padding-bottom:6px">${due === 1 ? "card" : "cards"} due for review<br>across all lectures</span></div>
+        <div class="row">
+          <button class="btn primary lg" data-act="reviewAll" ${due ? "" : "disabled"}>${due ? "Start review" : "No reviews due"}</button>
+          ${blind ? `<button class="btn" data-act="blind">Drill ${plural(blind, "blind spot")}</button>` : ""}
+          <button class="btn ghost" data-act="nav" data-arg="reviews">See what's due →</button>
+        </div>
+        <div class="stack" style="gap:6px"><span class="small muted">Recall style</span><div class="seg" role="group" aria-label="Recall style">${MODES.map(([k,l]) => `<button aria-pressed="${S.profile.mode === k}" data-act="mode" data-arg="${k}">${l}</button>`).join("")}</div></div>
+      </div>
+      <div class="panel stack">
+        <div class="row between"><span class="eyebrow">Streak</span><span class="mono small">${today} today</span></div>
+        <div class="row" style="align-items:baseline;gap:8px"><span class="bignum" style="font-size:2.5rem">${streakNow()}</span><span class="muted">${streakNow() === 1 ? "day" : "days"} in a row</span></div>
+        <div class="strip" aria-label="Answers in the last 14 days">${strip}</div>
+        <span class="small muted">Last 14 days</span>
+      </div>
+    </div>
+    ${examPanel()}
+    <div class="row between"><h2>Continue</h2><button class="btn ghost sm" data-act="nav" data-arg="library">All ${plural(S.decks.length, "lecture")} in Library →</button></div>
+    <div class="stack" style="gap:12px">${recent.map(lectureRow).join("")}</div>
+    ${loopPanel()}
+  </div>`;
+};
+function loopPanel(){ return `<div class="panel flat stack">
+  <h3>How each lecture gets to 100%</h3>
+  <div class="loop">
+    <div><span class="eyebrow">Step 1 · Learn</span><b>Read it once, properly</b><span class="small muted">Key points, a plain-English explanation and the slides for each section, then 2 quick checks.</span></div>
+    <div><span class="eyebrow">Step 2 · Remember</span><b>MC, then written recall</b><span class="small muted">Multiple choice clears the concept first. Then you write it from memory, which is what actually makes it stick. Spaced repetition brings it back just before you'd forget.</span></div>
+    <div><span class="eyebrow">Step 3 · Understand</span><b>Explain it (Feynman)</b><span class="small muted">Write the mechanism in plain words. The AI marks the gaps and turns them into new cards.</span></div>
+    <div><span class="eyebrow">Step 4 · Apply</span><b>Cases and comparisons</b><span class="small muted">Clinical scenarios and "which drug and why" questions, mixed across sections.</span></div>
+  </div>
+  <p class="small muted">A card counts as <b>secure</b> once you've recalled it correctly on two different days, at least once in writing. Getting MC right alone doesn't count, because recognising an answer is easier than producing it.</p>
+</div>`; }
+
+V.library = () => {
+  const L = S.lib, courses = S.profile.courses || [];
+  const q = L.q.trim().toLowerCase();
+  const count = id => S.decks.filter(d => id === "all" ? true : id === "none" ? !d.courseId || !course(d.courseId) : d.courseId === id).length;
+  let decks = S.decks.filter(d => L.course === "all" ? true : L.course === "none" ? !d.courseId || !course(d.courseId) : d.courseId === L.course);
+  const hl = s => { const t = String(s); const i = t.toLowerCase().indexOf(q); if(i < 0) return esc(t.slice(0, 140)); const a = Math.max(0, i - 50); return (a ? "…" : "") + esc(t.slice(a, i)) + "<mark>" + esc(t.slice(i, i + q.length)) + "</mark>" + esc(t.slice(i + q.length, i + q.length + 80)) + "…"; };
+  const hits = {};
+  if(q){
+    decks = decks.filter(d => {
+      const h = [];
+      if((d.name + " " + (d.file?.name || "")).toLowerCase().includes(q)) h.push(["Lecture", d.name]);
+      if(d.focus && d.focus.toLowerCase().includes(q)) h.push(["Exam focus", d.focus]);
+      d.sections.forEach(s => { if(s.title.toLowerCase().includes(q)) h.push(["Section", s.title]); else if(s.lesson && (s.lesson.keyPoints.join(" ") + " " + s.lesson.explain).toLowerCase().includes(q)) h.push(["Key points · " + s.title, s.lesson.keyPoints.find(k => k.toLowerCase().includes(q)) || s.lesson.explain]); });
+      d.cards.forEach(c => { if((c.front + " " + c.back).toLowerCase().includes(q)) h.push(["Card", c.front + " → " + c.back]); });
+      hits[d.id] = h; return h.length;
+    });
+  }
+  const sorters = {recent:(a,b) => (b.lastStudied || b.added || 0) - (a.lastStudied || a.added || 0), added:(a,b) => (b.added || 0) - (a.added || 0), name:(a,b) => a.name.localeCompare(b.name), progress:(a,b) => progress(a).total - progress(b).total};
+  decks.sort(sorters[L.sort] || sorters.recent);
+  const chats = q ? S.threads.filter(t => (t.title + " " + t.messages.map(m => m.content).join(" ")).toLowerCase().includes(q)).slice(0, 8) : [];
+  const files = S.decks.filter(d => d.file).reduce((n, d) => n + (d.file.size || 0), 0);
+  return `<div class="split">
+    <aside class="side" aria-label="Courses">
+      <span class="lbl">Courses</span>
+      ${[["all","All lectures"], ...courses.map(c => [c.id, c.name]), ["none","Uncategorised"]].map(([id, nm]) => `<button class="item" aria-current="${L.course === id}" data-act="libCourse" data-arg="${id}"><span>${esc(nm)}</span><span class="muted mono small">${count(id)}</span></button>`).join("")}
+      <div class="row" style="padding:8px 4px;gap:6px"><button class="btn sm" data-act="newCourse">New course</button>${course(L.course) ? `<button class="btn ghost sm" data-act="editCourse" data-arg="${L.course}">Rename or delete</button>` : ""}</div>
+    </aside>
+    <div class="stack" style="min-width:0">
+      <div class="stack" style="gap:6px"><h1>${esc(L.course === "all" ? "Library" : L.course === "none" ? "Uncategorised" : courseName(L.course))}</h1><p class="muted small">${plural(S.decks.length, "lecture")} · ${plural(S.decks.filter(d => d.file).length, "PDF")} kept${files ? " (" + fmtSize(files) + ")" : ""} · ${plural(S.threads.filter(t => t.messages.length).length, "saved chat")}</p></div>
+      <div class="row" style="flex-wrap:nowrap">
+        <input id="libq" type="search" data-bind="lib.q" data-live="1" value="${esc(L.q)}" placeholder="Search lectures, sections, cards and chats" style="flex:1;min-width:0">
+        <select id="libsort" data-bind="lib.sort" data-live="1" style="width:auto">${[["recent","Recently studied"],["added","Date added"],["name","Name"],["progress","Least revised"]].map(([k,l]) => `<option value="${k}" ${L.sort === k ? "selected" : ""}>${l}</option>`).join("")}</select>
+      </div>
+      <div class="panel" style="padding-block:6px">
+        ${decks.length ? decks.map(d => { const pr = progress(d); return `<div class="lrow">
+          ${ring(pr.total)}
+          <div style="min-width:0" class="stack" >
+            <div class="stack" style="gap:2px"><h3>${esc(d.name)}</h3>
+            <span class="small muted">${esc(courseName(d.courseId))} · added ${fmtDate(d.added || d.created)}${d.pageCount ? " · " + plural(d.pageCount, d.srcKind === "pdf" ? "page" : d.srcKind === "photos" ? "photo" : "part") : ""}${d.file ? " · " + esc(d.file.name) + " (" + fmtSize(d.file.size || 0) + ")" : ""}${d.lastStudied ? " · studied " + relDay(d.lastStudied) : ""}</span></div>
+            ${q && hits[d.id] ? `<div class="stack" style="gap:4px">${hits[d.id].slice(0, 4).map(([k, v]) => `<span class="hit"><b>${esc(k)}:</b> ${hl(v)}</span>`).join("")}${hits[d.id].length > 4 ? `<span class="hit">+${hits[d.id].length - 4} more</span>` : ""}</div>` : ""}
+          </div>
+          <div class="acts row" style="gap:6px;justify-content:flex-end"><button class="btn sm primary" data-act="open" data-arg="${d.id}">Open</button>${fileLink(d)}<button class="btn ghost sm" data-act="lectureMenu" data-arg="${d.id}">Manage</button></div>
+        </div>`; }).join("") : `<p class="muted" style="padding:18px 0">${q ? "Nothing matches “" + esc(L.q) + "”." : S.decks.length ? "No lectures in this course yet. Move one here with Manage, or add a new one." : "No lectures yet."}</p>`}
+      </div>
+      ${chats.length ? `<div class="stack" style="gap:8px"><h2>Chats</h2><div class="panel" style="padding-block:6px">${chats.map(t => `<div class="lrow" style="grid-template-columns:minmax(0,1fr) auto"><div style="min-width:0"><b>${esc(t.title)}</b><p class="hit">${hl(t.messages.map(m => m.content).find(c => c.toLowerCase().includes(q)) || t.title)}</p></div><button class="btn sm" data-act="openThread" data-arg="${t.id}">Open</button></div>`).join("")}</div></div>` : ""}
+      <div class="row"><button class="btn" data-act="nav" data-arg="add">Add lecture</button>${!S.decks.some(d => d.sample) ? `<button class="btn ghost" data-act="sample">Add the sample lecture</button>` : ""}</div>
+    </div>
+  </div>`;
+};
+
+function threadKind(t){ if(/^Practice · /.test(t.title)) return "Practice"; if(t.secId) return "Section"; if(t.deckId) return "Lecture"; return "General"; }
+function threadSub(t){ const d = t.deckId && deck(t.deckId); const k = threadKind(t); const when = relDay(t.updated) === "today" ? new Date(t.updated).toLocaleTimeString(undefined, {hour:"2-digit", minute:"2-digit"}) : fmtDate(t.updated).replace(/,? \d{4}$/, "");
+  return [k === "Section" ? "Section" : "", d && k !== "Practice" ? d.name : "", when].filter(Boolean).join(" · "); }
+function chatGroups(list, by){
+  const map = new Map(), add = (k, t) => { if(!map.has(k)) map.set(k, []); map.get(k).push(t); };
+  if(by === "lecture"){
+    const order = S.decks.map(d => d.name);
+    list.forEach(t => add(t.deckId && deck(t.deckId) ? deck(t.deckId).name : "General", t));
+    return [...map.entries()].sort((a, b) => (a[0] === "General") - (b[0] === "General") || order.indexOf(a[0]) - order.indexOf(b[0]));
+  }
+  const today = startOfDay(Date.now());
+  list.forEach(t => { const n = Math.round((today - startOfDay(t.updated)) / DAY);
+    add(n <= 0 ? "Today" : n === 1 ? "Yesterday" : n <= 7 ? "Previous 7 days" : n <= 30 ? "Previous 30 days" : new Date(t.updated).toLocaleDateString(undefined, {month:"long", year:"numeric"}), t); });
+  return [...map.entries()];
+}
+function threadRow(x, cur){
+  const U = S.askUI;
+  if(U.rename === x.id) return `<div class="trow on" style="padding:4px 6px"><input id="renamein" class="trename" type="text" data-bind="askUI.renameText" value="${esc(U.renameText)}" aria-label="Chat name"></div>`;
+  if(U.confirm === x.id) return `<div class="tconfirm"><span>Delete “${esc(x.title)}”? This can't be undone.</span><div class="row" style="gap:6px"><button class="btn sm" style="color:var(--bad)" data-act="delThread" data-arg="${x.id}">Delete</button><button class="btn ghost sm" data-act="cancelDelThread">Cancel</button></div></div>`;
+  return `<div class="trow ${x.id === cur ? "on" : ""}"><button class="topen" data-act="openThread" data-arg="${x.id}" aria-current="${x.id === cur}"><span class="tt">${esc(x.title)}</span><span class="ts">${esc(threadSub(x))}</span></button><button class="tdots" data-act="threadMenu" data-arg="${x.id}" aria-label="Chat options" aria-expanded="${U.menu === x.id}">⋯</button>
+    ${U.menu === x.id ? `<div class="tmenu"><button data-act="renameThread" data-arg="${x.id}">Rename</button><button class="danger" data-act="askDelThread" data-arg="${x.id}">Delete</button></div>` : ""}</div>`;
+}
+V.ask = () => {
+  const t = activeThread(); const U = S.askUI;
+  const all = S.threads.filter(x => x.messages.length);
+  const q = U.q.trim().toLowerCase();
+  const list = q ? all.filter(x => (x.title + " " + x.messages.map(m => m.content).join(" ")).toLowerCase().includes(q)) : all;
+  const sugg = t.deckId ? ["What's most likely to be examined here?", "Explain the hardest section simply", "Quiz me on 3 high-yield points", "My professor said …"]
+    : [upcomingExams().length ? "What should I do today to prepare for " + upcomingExams()[0].name + "?" : "How should I revise pharmacology for an exam in 3 weeks?", "Explain the difference between ACE inhibitors and ARBs", "Walk me through the cardiac action potential", "Make me a revision plan for my lectures"];
+  return `<div class="split">
+    <aside class="side" aria-label="Chats">
+      <button class="btn primary" data-act="newChat" style="margin-bottom:6px">New chat</button>
+      ${all.length ? `<input id="askq" class="tsearch" type="search" data-bind="askUI.q" data-live="1" value="${esc(U.q)}" placeholder="Search chats">
+      <div class="tseg" role="group" aria-label="Organise chats">${[["date","By date"],["lecture","By lecture"]].map(([k, l]) => `<button aria-pressed="${U.by === k}" data-act="chatsBy" data-arg="${k}">${l}</button>`).join("")}</div>` : ""}
+      <div class="tlist">
+      ${all.length ? (list.length ? chatGroups(list, U.by).map(([g, ts]) => `<span class="lbl">${esc(g)} <span style="font-weight:400">${ts.length}</span></span>${ts.map(x => threadRow(x, t.id)).join("")}`).join("") : `<p class="small muted" style="padding:6px 10px">No chats match “${esc(U.q)}”.</p>`)
+        : `<p class="small muted" style="padding:4px 10px">Your conversations are kept here, including chats from practice and lectures, so you can find them again.</p>`}
+      </div>
+      ${all.length ? `<p class="small muted" style="padding:8px 10px 0">${plural(all.length, "chat")}</p>` : ""}
+    </aside>
+    <div class="stack" style="min-width:0;gap:14px">
+      <div class="row between" style="gap:10px">
+        <h1 style="font-size:1.6rem;min-width:0;overflow-wrap:anywhere">${t.messages.length ? esc(t.title) : "Ask AI"}</h1>
+        <div class="row" style="gap:6px"><button class="btn ghost sm" data-act="modelsMenu">AI settings</button>${t.messages.length ? `<button class="btn ghost sm" data-act="renameThread" data-arg="${t.id}">Rename</button><button class="btn ghost sm" data-act="askDelThread" data-arg="${t.id}">Delete</button>` : ""}</div>
+      </div>
+      <label class="f" style="max-width:420px">Use a lecture as context <span class="hint">The AI then knows its sections and your exam focus, and can mark sections High or Skip for you.</span>
+        <select id="askctx" data-change="askCtx"><option value="">None, general question</option>${S.decks.map(d => `<option value="${d.id}" ${t.deckId === d.id ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select></label>
+      ${chatPanel(t, sugg)}
+    </div>
+  </div>`;
+};
+
+V.add = () => { const a = S.add; const has = a.pages || a.images.length; const courses = S.profile.courses || [];
+  return `<div class="stack card">
+    <div class="stack" style="gap:6px"><h1>Add a lecture</h1><p class="muted">Upload the slides you need to revise. The file is kept in your Library, and you get a step-by-step path through it.</p></div>
+    <div class="panel stack">
+      <label class="drop ${has ? "has" : ""}" for="file">
+        <b>${has ? esc(a.fileName) : "Choose a PDF, text file, or photos of your notes"}</b>
+        <span class="small muted">${has ? "Choose again to replace it" : "PDF slides work best. For scanned slides or handwriting, pick photos (up to 20)."}</span>
+        <input id="file" type="file" accept=".pdf,.txt,.md,application/pdf,text/plain,image/*" multiple style="max-width:100%" ${a.busy ? "disabled" : ""}>
+      </label>
+      <button class="btn ghost sm" data-act="togglePaste" style="align-self:flex-start">${a.showPaste ? "Hide pasted text" : "Or paste text instead"}</button>
+      ${a.showPaste ? `<textarea id="paste" data-bind="add.text" placeholder="Paste your lecture notes here">${esc(a.text)}</textarea>` : ""}
+      <div class="grid2">
+        <label class="f">Lecture name <span class="hint">Optional</span><input id="lname" type="text" data-bind="add.name" value="${esc(a.name)}" placeholder="e.g. Week 4 · Autonomic drugs"></label>
+        <label class="f">Course <span class="hint">For your Library</span><select id="lcourse" data-bind="add.courseId" data-live="1"><option value="">Uncategorised</option>${courses.map(c => `<option value="${c.id}" ${a.courseId === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}<option value="__new" ${a.courseId === "__new" ? "selected" : ""}>New course…</option></select></label>
+      </div>
+      ${a.courseId === "__new" ? `<label class="f">New course name<input id="lnewcourse" type="text" data-bind="add.newCourse" value="${esc(a.newCourse)}" placeholder="e.g. Pharmacology 2"></label>` : ""}
+      <label class="f">What did your professor say about the exam? <span class="hint">What they stressed and what you can ignore. You can change this later, or tell the AI.</span>
+        <textarea id="lfocus" data-bind="add.focus" placeholder="e.g. Know every β-blocker side effect. Diuretic mechanisms will be a long-answer question. Skip the slides on drug discovery history.">${esc(a.focus)}</textarea></label>
+      ${a.err ? `<p style="color:var(--bad)">${esc(a.err)}</p>` : ""}
+      <div class="row"><button class="btn primary lg" data-act="build" ${a.busy || !aiOK() ? "disabled" : ""}>Build my revision path</button><span id="addStatus" class="small muted">${a.busy ? `<span class="spin"></span> ` : ""}${esc(a.status)}</span></div>
+      ${aiNote()}
+    </div>
+  </div>`;
+};
+
+V.lecture = () => {
+  const d = deck(S.deckId); if(!d){ S.view = "today"; return V.today(); }
+  const pr = progress(d);
+  const tabs = [["path","Path"],["tutor","Ask AI"],["cards","Cards"],["quiz","Mock quiz"]];
+  return `<div class="stack">
+    <div class="row" style="gap:18px;align-items:center">
+      ${ring(pr.total, true)}
+      <div style="min-width:0;flex:1">
+        <span class="eyebrow">${esc(courseName(d.courseId))}${pr.total >= 100 ? " · Exam-ready" : ""}${d.sample ? " · Sample" : ""}</span>
+        <h1>${esc(d.name)}</h1>
+        <p class="small muted">${d.pageCount ? plural(d.pageCount, d.srcKind === "pdf" ? "page" : d.srcKind === "photos" ? "photo" : "part") + " · " : ""}${plural(activeSecs(d).length, "section")} to learn${d.sections.length > activeSecs(d).length ? " · " + (d.sections.length - activeSecs(d).length) + " skipped" : ""}</p>
+      </div>
+      <div class="row" style="gap:6px">${fileLink(d)}<button class="btn ghost sm" data-act="lectureMenu" data-arg="${d.id}">Manage</button></div>
+    </div>
+    <div class="tabs" role="tablist">${tabs.map(([k,l]) => `<button role="tab" aria-selected="${S.ltab === k}" data-act="ltab" data-arg="${k}">${l}</button>`).join("")}</div>
+    ${({path:pathTab, tutor:tutorTab, cards:cardsTab, quiz:quizTab})[S.ltab](d, pr)}
+  </div>`;
+};
+function pathTab(d, pr){
+  const ns = nextStep(d);
+  const btn = {review:"Start review", lockin:"Start", learn:"Start learning", feyn:"Explain it", practice:"Start practice", done:"Take a mock quiz", wait:"Back to Today"}[ns.kind];
+  const g = ns.sec && S.gen[ns.sec];
+  return `<div class="panel next stack">
+      <span class="eyebrow">Your next step</span>
+      <h2>${esc(ns.label)}</h2>
+      <p class="muted">${esc(ns.sub)}</p>
+      <div class="row"><button class="btn primary lg" data-act="nextStep" ${(["learn","feyn","practice"].includes(ns.kind) && !aiOK() && !(ns.kind === "learn" && section(d, ns.sec)?.lesson)) ? "disabled" : ""}>${btn}</button>${ns.kind === "learn" ? `<span class="small muted" id="gen-${ns.sec}">${g && g.busy ? `<span class="spin"></span> Preparing this section…` : g && g.err ? esc(g.err) : ""}</span>` : ""}</div>
+      ${aiNote()}
+    </div>
+    <div class="grid2">
+      ${[["Learn", pr.learn, activeSecs(d).filter(s => s.learned).length + " of " + activeSecs(d).length + " sections read"],
+         ["Remember", pr.rem, "Recall cards secure"],
+         ["Understand", pr.und, "Why cards and Feynman explanations"],
+         ["Apply & evaluate", pr.app, "Case and compare questions"]].map(([t, v, sub]) => `<div class="panel stack" style="gap:8px;padding:16px">
+        <div class="row between"><b>${t}</b><span class="mono small">${v}%</span></div>
+        <div class="bar"><i style="width:${v}%"></i></div>
+        <span class="small muted">${sub}</span></div>`).join("")}
+    </div>
+    <div class="panel">
+      <div class="row between" style="margin-bottom:6px"><h2>Sections</h2><span class="small muted">Set what's examined: High, Normal or Skip</span></div>
+      <div>${d.sections.map(s => {
+        const sc = secScore(d, s); const n = d.cards.filter(c => c.sec === s.id).length;
+        const st = s.priority === "skip" ? "" : sc.total >= 1 ? "secure" : s.learned ? "learned" : "";
+        return `<div class="sec ${s.priority === "skip" ? "skipped" : ""}">
+          <span class="dot ${st}">${st ? "✓" : ""}</span>
+          <div style="min-width:0" class="stack">
+            <div class="row" style="gap:8px"><h3>${esc(s.title)}</h3>${prioChip(s.priority)}</div>
+            <span class="small muted">${s.pages && d.srcKind === "pdf" ? "p. " + s.pages[0] + (s.pages[1] !== s.pages[0] ? "–" + s.pages[1] : "") + " · " : ""}${s.priority === "skip" ? esc(s.why || "Not examined") : (s.learned ? Math.round(sc.total*100) + "% secure" : "Not read yet") + (n ? " · " + plural(n, "card") : "") + (s.feyn ? " · explained " + s.feyn + "/100" : "")}</span>
+            <div class="seg" role="group" aria-label="Exam priority">${["high","normal","skip"].map(p => `<button aria-pressed="${s.priority === p}" data-act="prio" data-arg="${s.id}|${p}">${p[0].toUpperCase() + p.slice(1)}</button>`).join("")}</div>
+          </div>
+          <div class="acts">${s.priority === "skip" ? "" : `
+            <button class="btn sm ${!s.learned && ns.sec === s.id ? "primary" : ""}" data-act="learn" data-arg="${s.id}">${s.learned ? "Re-read" : "Learn"}</button>
+            ${s.learned ? `<button class="btn sm" data-act="feyn" data-arg="${s.id}">Explain</button>` : ""}
+            ${s.learned && newL1(d, s).length ? `<button class="btn sm" data-act="lockin" data-arg="${s.id}">Lock in ${newL1(d, s).length}</button>` : ""}`}
+          </div></div>`; }).join("")}
+      </div>
+    </div>
+    <div class="panel stack">
+      <h2>Exam focus</h2>
+      <p class="small muted">What your professor stressed or said to ignore. The AI uses this for every lesson, card and quiz. You can also tell it in Ask AI.</p>
+      <textarea id="focus-${d.id}" data-bind="focusDraft.${d.id}" placeholder="e.g. Long question on β-blockers. No need to memorise doses.">${esc(S.focusDraft[d.id] ?? d.focus)}</textarea>
+      <div class="row"><button class="btn sm" data-act="saveFocus">Save notes</button><button class="btn sm" data-act="resort" ${aiOK() ? "" : "disabled"}>Save and re-sort sections with AI</button><span id="resortStatus" class="small muted"></span></div>
+    </div>
+    <div class="row">${dueCards(d).length ? `<button class="btn" data-act="reviewDeck">Review ${plural(dueCards(d).length, "due card")}</button>` : ""}${practiceNew(d).length ? `<button class="btn" data-act="practise">Practise ${practiceNew(d).length} new why / case / compare</button>` : ""}</div>`;
+}
+function tutorTab(d){
+  const t = activeThread();
+  const others = S.threads.filter(x => x.deckId === d.id && x.messages.length && x.id !== t.id);
+  return `<div class="panel stack">
+    <div class="row between"><div class="stack" style="gap:2px"><h2>${t.messages.length ? esc(t.title) : "Ask about this lecture"}</h2><p class="small muted">The AI knows this lecture's sections and your exam focus.${S.aiTools ? " Tell it what your professor said and it will mark sections High or Skip, or add cards." : ""}</p></div>
+    <div class="row" style="gap:6px">${t.messages.length ? `<button class="btn sm" data-act="newTutor">New chat</button>` : ""}<button class="btn ghost sm" data-act="nav" data-arg="ask">All chats</button></div></div>
+    ${others.length ? `<div class="row small" style="gap:6px"><span class="muted">Earlier:</span>${others.slice(0, 4).map(x => `<button class="btn ghost sm" data-act="tutorSwitch" data-arg="${x.id}">${esc(x.title.slice(0, 40))}</button>`).join("")}</div>` : ""}
+    ${chatPanel(t, ["What's most likely to be examined in this lecture?", (activeSecs(d).find(s => !s.learned) || activeSecs(d)[0]) ? "Explain “" + (activeSecs(d).find(s => !s.learned) || activeSecs(d)[0]).title + "” simply, step by step" : "Explain this lecture simply", "Quiz me on 3 high-yield points", "My professor said …"])}
+  </div>`;
+}
+function cardsTab(d){
+  const f = S.cardFilter || 0;
+  const cs = d.cards.filter(c => !f || c.bloom === f);
+  const end = endOfToday();
+  return `<div class="panel stack">
+    <div class="row between"><div class="seg" role="group" aria-label="Filter by level">${[0,1,2,3,4].map(l => `<button aria-pressed="${f === l}" data-act="cfilter" data-arg="${l}">${l ? "L" + l + " " + LEVELS[l] : "All " + d.cards.length}</button>`).join("")}</div>
+    <button class="btn sm" data-act="addCard">Add a card</button></div>
+    <div>${cs.length ? cs.map(c => { const s = section(d, c.sec);
+      const st = c.due == null ? `<span class="chip">New</span>` : secure(c) ? `<span class="chip good">Secure</span>` : c.due <= end ? `<span class="chip warn">Due</span>` : `<span class="chip">${relDay(c.due)}</span>`;
+      return `<div class="crow" style="${s && s.priority === "skip" ? "opacity:.5" : ""}">
+        ${lvChip(c.bloom)}
+        <div class="t stack" style="gap:2px"><b>${esc(c.front)}</b><span class="small muted">${esc(c.back)}</span><span class="small muted">${s ? esc(s.title) : ""}${c.mc ? " · has MC" : ""}${c.blind ? " · blind spot" : ""}${c.lapses ? " · forgotten " + c.lapses + "×" : ""}</span></div>
+        <div class="stack" style="gap:6px;align-items:flex-end">${st}<button class="btn ghost sm" data-act="editCard" data-arg="${c.id}">Edit</button></div>
+      </div>`; }).join("") : `<p class="muted" style="padding:16px 0">No cards yet. Cards appear as you learn each section.</p>`}</div>
+  </div>`;
+}
+function quizTab(d){
+  const q = S.quiz && S.quiz.deckId === d.id ? S.quiz : (S.quiz = {deckId:d.id, count:8, qs:null, busy:false, err:""});
+  if(q.qs && q.i < q.qs.length){ const it = q.qs[q.i];
+    return `<div class="card stack">
+      <div class="row between"><span class="eyebrow">Question ${q.i + 1} of ${q.qs.length}</span><span class="mono small">${q.score} correct</span></div>
+      <div class="prog"><i style="width:${pct(q.i, q.qs.length)}%"></i></div>
+      <div class="panel stack"><p style="font-family:var(--display);font-size:1.2rem;color:var(--ink-strong)">${esc(it.q)}</p>
+        <div class="stack" style="gap:8px">${it.opts.map((o, i) => `<button class="opt ${q.picked != null ? (o.ok ? "right" : i === q.picked ? "wrong" : "") : ""}" data-act="qpick" data-arg="${i}" ${q.picked != null ? "disabled" : ""}><span class="k">${"ABCD"[i] || i + 1}</span><span>${esc(o.t)}</span></button>`).join("")}</div>
+        ${q.picked != null ? `<div class="fb"><b>${it.opts[q.picked].ok ? "Correct." : "Not quite."}</b><span>${esc(it.why)}</span></div><button class="btn primary" data-act="qnext" style="align-self:flex-start">${q.i + 1 < q.qs.length ? "Next question" : "See results"}</button>` : ""}
+      </div></div>`;
+  }
+  if(q.qs){ return `<div class="panel stack card">
+      <span class="eyebrow">Mock quiz result</span><h2>${q.score} / ${q.qs.length} correct (${pct(q.score, q.qs.length)}%)</h2>
+      ${q.wrong.length ? `<p class="muted">The cards behind the ones you missed are due again now, so they'll come back in your next review.</p><ul class="kp">${q.wrong.map(w => `<li>${esc(w.q)}<br><span class="small muted">Answer: ${esc((w.opts.find(o => o.ok) || {}).t)}</span></li>`).join("")}</ul>` : `<p class="muted">Clean sweep.</p>`}
+      <div class="row"><button class="btn primary" data-act="quizNew">New quiz</button></div></div>`; }
+  return `<div class="panel stack card">
+    <h2>Mock quiz</h2>
+    <p class="muted">Exam-style multiple choice built from sections you've learned. It leans on your weakest cards and uses distractors you could plausibly confuse.</p>
+    <label class="f" style="max-width:220px">Questions<select id="qcount" data-bind="quiz.count" data-num="1">${[5,8,12,20].map(n => `<option value="${n}" ${q.count === n ? "selected" : ""}>${n}</option>`).join("")}</select></label>
+    ${q.err ? `<p style="color:var(--bad)">${esc(q.err)}</p>` : ""}
+    <div class="row"><button class="btn primary" data-act="quizGen" ${q.busy || !aiOK() ? "disabled" : ""}>${q.busy ? `<span class="spin"></span> Writing questions…` : "Start quiz"}</button></div>
+    ${aiNote()}
+  </div>`;
+}
+
+V.section = () => {
+  const d = deck(S.deckId), s = section(d, S.secId); if(!s){ S.view = "lecture"; return V.lecture(); }
+  const L = s.lesson, g = S.gen[s.id] || {};
+  const n1 = newL1(d, s).length;
+  const canSlides = s.pages && (d.file || d.photos);
+  let slides = "";
+  if(canSlides && S.showSlides){
+    const nums = []; for(let n = s.pages[0]; n <= Math.min(s.pages[1], s.pages[0] + 11); n++) nums.push(n);
+    slides = `<div class="panel stack"><div class="row between"><h2>Slides</h2><div class="row" style="gap:6px">${fileLink(d, "Open full PDF")}<button class="btn ghost sm" data-act="toggleSlides">Hide</button></div></div>
+      <div class="slides">${nums.map(n => { const src = slideSrc(d, n); return src ? `<img id="pimg-${n}" src="${esc(src)}" alt="Slide ${n}">` : `<div class="ph" id="pimg-${n}"><span><span class="spin"></span> Page ${n}</span></div>`; }).join("")}</div>
+      ${s.pages[1] > s.pages[0] + 11 ? `<p class="small muted">Showing the first 12 pages of this section.</p>` : ""}<p class="small muted" id="slidesErr"></p></div>`;
+  }
+  return `<div class="stack card">
+    <button class="btn ghost sm" data-act="open" data-arg="${d.id}" style="align-self:flex-start">← ${esc(d.name)}</button>
+    <div class="stack" style="gap:6px"><span class="eyebrow">Step 1 · Learn${s.pages && d.srcKind === "pdf" ? " · p. " + s.pages[0] + "–" + s.pages[1] : ""}</span><div class="row" style="gap:10px"><h1>${esc(s.title)}</h1>${prioChip(s.priority)}</div>${s.why ? `<p class="small muted">${esc(s.why)}</p>` : ""}
+      <div class="row" style="gap:6px">${canSlides && !S.showSlides ? `<button class="btn sm" data-act="toggleSlides">Show the slides</button>` : ""}<button class="btn sm" data-act="askAbout" data-arg="${s.id}">Ask AI about this section</button></div></div>
+    ${slides}
+    ${!L ? `<div class="panel stack">${g.err ? `<p style="color:var(--bad)">${esc(g.err)}</p><button class="btn primary" data-act="regen" style="align-self:flex-start">Try again</button>` : `<p id="gen-${s.id}" class="muted"><span class="spin"></span> Preparing this section${g.chars ? " · " + g.chars + " characters written" : "…"}</p><p class="small muted">The AI is reading these pages and writing your key points, explanation and cards. This usually takes 20–60 seconds.</p>`}${aiNote()}</div>` : `
+    <div class="panel stack"><h2>Key points</h2><ul class="kp">${L.keyPoints.map(k => k.startsWith("★") ? `<li class="star">${esc(k.replace(/^★\s*/, ""))}</li>` : `<li>${esc(k)}</li>`).join("")}</ul>${L.keyPoints.some(k => k.startsWith("★")) ? `<p class="small muted">★ = matches your exam focus</p>` : ""}</div>
+    <div class="panel stack"><h2>How it fits together</h2><p class="prose">${esc(L.explain)}</p>${L.hook ? `<p class="hook">${esc(L.hook)}</p>` : ""}</div>
+    <div class="panel"><h2 style="margin-bottom:4px">Quick checks</h2><p class="small muted" style="margin-bottom:6px">Answer in your head or out loud before revealing. A little struggle here is what makes it stick.</p>
+      ${L.checks.map((c, i) => { const st = s.checks[i]; return `<div class="check"><b>${esc(c.q)}</b>${st ? `<p class="small" style="white-space:pre-wrap">${esc(c.a)}</p><span class="chip ${st === "got" ? "good" : "warn"}" style="align-self:flex-start">${st === "got" ? "Got it" : "Missed it"}</span>` : `<details><summary class="small" style="cursor:pointer">Reveal answer</summary><p class="small" style="margin:8px 0;white-space:pre-wrap">${esc(c.a)}</p><div class="row"><button class="btn sm" data-act="chk" data-arg="${i}|got">I got it</button><button class="btn sm" data-act="chk" data-arg="${i}|miss">I missed it</button></div></details>`}</div>`; }).join("")}
+    </div>
+    <div class="panel next stack"><h2>${s.learned ? "Section learned" : "Done reading?"}</h2>
+      <p class="muted">${n1 ? "Next, lock in " + plural(n1, "recall card") + " from this section while it's fresh." : s.learned ? "Its cards are already in your reviews." : "Mark it learned to move on."}</p>
+      <div class="row"><button class="btn primary lg" data-act="markLearned">${n1 ? "Lock in " + n1 + " cards" : s.learned ? "Back to path" : "Mark learned"}</button></div></div>`}
+  </div>`;
+};
+
+V.study = () => {
+  const s = S.session; skipMissing(); const k = cur();
+  const modeBar = `<div class="seg" role="group" aria-label="Recall style">${MODES.map(([m,l]) => `<button aria-pressed="${s.mode === m}" data-act="mode" data-arg="${m}">${l}</button>`).join("")}</div>`;
+  if(!k){
+    const total = s.counts[1] + s.counts[2] + s.counts[3] + s.counts[4];
+    const d = s.deckId && deck(s.deckId); const ns = d && nextStep(d);
+    return `<div class="card stack"><div class="panel stack" style="padding:28px">
+      <span class="eyebrow">${esc(s.label)}</span><h1>Session done</h1>
+      <p class="muted">${s.mcRight + s.mcWrong ? "Multiple choice: " + s.mcRight + " right, " + s.mcWrong + " wrong. " : ""}${total ? "Recall: " + (s.counts[3] + s.counts[4]) + " recalled, " + s.counts[2] + " hard, " + s.counts[1] + " forgotten." : ""}${s.blindHits ? " " + plural(s.blindHits, "blind spot") + " found (you were sure but wrong). They'll come back sooner." : ""}</p>
+      ${ns ? `<div class="panel next stack"><span class="eyebrow">Next step</span><h3>${esc(ns.label)}</h3><p class="small muted">${esc(ns.sub)}</p></div>` : ""}
+      <div class="row">${d ? `<button class="btn primary" data-act="open" data-arg="${d.id}">Continue the path</button>` : ""}${s.returnTo === "reviews" ? `<button class="btn ${d ? "" : "primary"}" data-act="nav" data-arg="reviews">Back to Reviews</button>` : ""}<button class="btn" data-act="nav" data-arg="today">Today</button></div>
+    </div></div>`;
+  }
+  const {d, c} = k; const sec = section(d, c.sec);
+  const left = s.queue.length - s.idx;
+  const front = esc(c.front).replace(/_{3,}/g, `<span class="blank">?</span>`);
+  const head = `<div class="row between"><span class="eyebrow">${esc(s.label)}</span><div class="row" style="gap:8px"><span class="mono small">${left} left</span><button class="btn ghost sm" data-act="exitStudy">Exit</button></div></div>
+    <div class="prog"><i style="width:${pct(s.idx, s.queue.length)}%"></i></div>
+    <div class="row between" style="gap:8px">${modeBar}${s.preparing ? `<span class="small muted"><span class="spin"></span> Preparing choices…</span>` : s.prepErr ? `<span class="small muted">${esc(s.prepErr)}</span>` : ""}</div>`;
+  const chips = `<div class="row" style="gap:6px">${lvChip(c.bloom)}${sec ? `<span class="chip">${esc(sec.title)}</span>` : ""}${c.due == null ? `<span class="chip accent">New</span>` : ""}${c.blind ? `<span class="chip bad">Blind spot</span>` : ""}<span class="chip">${s.present === "mc" ? "Multiple choice" : "Written recall"}</span></div>`;
+  const after = `${c.points.length ? `<div class="stack" style="gap:4px"><span class="eyebrow">Key points</span><ul class="kp" style="gap:4px">${c.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>` : ""}
+    ${s.explain || s.explaining ? `<div class="fb"><h4>Deeper explanation</h4><p id="explain" style="white-space:pre-wrap">${s.explain ? esc(s.explain) : `<span class="spin"></span> Thinking…`}</p></div>` : ""}
+    <div class="row" style="gap:6px">${aiOK() && !s.explain && !s.explaining ? `<button class="btn ghost sm" data-act="explain">Explain why this is true</button>` : ""}${aiOK() ? `<button class="btn ghost sm" data-act="askCard">Ask AI about this card</button>` : ""}</div>`;
+  if(s.present === "mc" && s.opts){
+    const ok = s.picked != null && s.opts[s.picked].ok;
+    const concept = s.mode === "mclq";
+    const sgm = ok ? 3 : 1;
+    const mivs = concept ? ["retry soon","write it next","write it next","write it next"] : [1,2,3,4].map(g => g === 1 ? "10m" : fmtIv(nextInterval(c, g, null)));
+    return `<div class="card stack">${head}
+      <div class="flash">${chips}<div class="q">${front}</div>
+        <div class="stack" style="gap:8px">${s.opts.map((o, i) => `<button class="opt ${s.picked != null ? (o.ok ? "right" : i === s.picked ? "wrong" : "") : ""}" data-act="mcPick" data-arg="${i}" ${s.picked != null ? "disabled" : ""}><span class="k">${i + 1}</span><span>${esc(o.t)}</span></button>`).join("")}</div>
+        ${s.picked == null ? `<span class="small muted">Pick an answer, or press <span class="kbd">1</span>–<span class="kbd">${s.opts.length}</span>. Try to recall it before you read the options.</span>` : `
+          <div class="fb"><b>${ok ? "Correct." : "Not quite."}</b><span>${concept ? (ok ? "Concept cleared. Rate how well you knew it. You'll write it from memory in a few cards." : "Read the answer below, then rate it. You'll see it again shortly.") : "How well did you know it? Be honest: a lucky guess is Hard or Again."}</span></div>
+          <div class="a">${esc(c.back)}</div>
+          ${after}
+          <div class="grades">${[["Again",1],["Hard",2],["Good",3],["Easy",4]].map(([l, g]) => `<button class="${sgm === g ? "sugg" : ""}" data-act="mcGrade" data-arg="${g}">${l}<small>${mivs[g-1]}</small></button>`).join("")}</div>
+          <span class="small muted"><span class="kbd">1</span>–<span class="kbd">4</span> to rate · <span class="kbd">Enter</span> takes the suggested one</span>`}
+      </div></div>`;
+  }
+  const sg = s.phase === "answer" ? suggested() : 0;
+  const ivs = [1,2,3,4].map(g => g === 1 ? "10m" : fmtIv(nextInterval(c, g, s.conf)));
+  return `<div class="card stack">${head}
+    <div class="flash">${chips}<div class="q">${front}</div>
+      ${s.phase === "ask" ? `
+        <textarea id="typed" data-bind="session.typed" placeholder="${isOpen(c) ? "Write your answer. Producing it from memory is what makes it stick." : "Type the answer, or just say it in your head"}">${esc(s.typed)}</textarea>
+        <div class="stack" style="gap:6px"><span class="small muted">How sure are you?</span><div class="conf">${[["sure","Sure"],["unsure","Unsure"],["none","No idea"]].map(([k2, l]) => `<button class="btn" aria-pressed="${s.conf === k2}" data-act="conf" data-arg="${k2}">${l}</button>`).join("")}</div></div>
+        <div class="row"><button class="btn primary" data-act="check" ${aiOK() ? "" : "disabled"}>Check with AI</button><button class="btn" data-act="reveal">Reveal and mark myself</button></div>
+        <span class="small muted"><span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> to check · <span class="kbd">Space</span> to reveal when not typing</span>
+      ` : `
+        <div class="a">${esc(c.back)}</div>
+        ${s.typed ? `<div class="stack" style="gap:4px"><span class="eyebrow">Your answer</span><p class="small" style="white-space:pre-wrap">${esc(s.typed)}</p></div>` : ""}
+        ${s.ai === "loading" ? `<div class="fb"><span><span class="spin"></span> Marking your answer…</span></div>` : s.ai ? `<div class="fb">
+          <div class="row between"><b>${s.ai.score}/100</b><span class="small muted">Suggested: ${["","Again","Hard","Good","Easy"][sg]}</span></div>
+          ${s.ai.feedback ? `<span>${esc(s.ai.feedback)}</span>` : ""}
+          ${s.ai.got.length ? `<h4>You covered</h4><ul>${s.ai.got.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+          ${s.ai.missed.length ? `<h4>Missing</h4><ul>${s.ai.missed.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+          ${s.ai.errors.length ? `<h4 style="color:var(--bad)">Wrong</h4><ul>${s.ai.errors.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+        </div>` : s.aiErr ? `<p class="small" style="color:var(--bad)">${esc(s.aiErr)}</p>` : ""}
+        ${after}
+        <div class="grades">${[["Again",1],["Hard",2],["Good",3],["Easy",4]].map(([l, g]) => `<button class="${sg === g ? "sugg" : ""}" data-act="grade" data-arg="${g}">${l}<small>${ivs[g-1]}</small></button>`).join("")}</div>
+        <span class="small muted"><span class="kbd">1</span>–<span class="kbd">4</span> to grade${s.conf === "sure" ? " · you said you were sure. If you got it wrong, pick Again: it becomes a blind spot." : ""}</span>
+      `}
+    </div>
+  </div>`;
+};
+
+V.feyn = () => {
+  const f = S.feyn, d = deck(f.deckId), s = section(d, f.secId); const r = f.result;
+  return `<div class="card stack">
+    <button class="btn ghost sm" data-act="open" data-arg="${d.id}" style="align-self:flex-start">← ${esc(d.name)}</button>
+    <div class="stack" style="gap:6px"><span class="eyebrow">Step 3 · Understand · Feynman check</span><h1>Explain “${esc(s.title)}”</h1>
+    <p class="muted prose">Explain it as if teaching a first-year student. Use plain words and go step by step from cause to effect. Don't look at your notes. Wherever you get stuck is the part you haven't really understood yet.</p></div>
+    <div class="panel stack">
+      <textarea id="feyntext" data-bind="feyn.text" style="min-height:200px" placeholder="Start with what it is, then how it works, then why it matters clinically…">${esc(f.text)}</textarea>
+      ${f.err ? `<p style="color:var(--bad)">${esc(f.err)}</p>` : ""}
+      <div class="row"><button class="btn primary" data-act="feynCheck" ${f.busy || !aiOK() ? "disabled" : ""}>${f.busy ? `<span class="spin"></span> Reading your explanation…` : r ? "Check again" : "Check my explanation"}</button><span class="small muted">Score 70 or more to complete this step.</span></div>
+      ${aiNote()}
+    </div>
+    ${r ? `<div class="panel stack">
+      <div class="row between"><h2>${r.score}/100</h2><span class="chip ${r.score >= 70 ? "good" : "warn"}">${r.score >= 70 ? "Step complete" : "Not yet: fix the gaps and try again"}</span></div>
+      <div class="grid2">
+        ${r.nailed.length ? `<div class="fb"><h4>You nailed</h4><ul>${r.nailed.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+        ${r.gaps.length ? `<div class="fb"><h4>Gaps</h4><ul>${r.gaps.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+        ${r.errors.length ? `<div class="fb"><h4 style="color:var(--bad)">Wrong</h4><ul>${r.errors.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+        ${r.jargon.length ? `<div class="fb"><h4>Jargon you didn't explain</h4><ul>${r.jargon.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+      </div>
+      ${r.clearer ? `<div class="stack" style="gap:6px"><span class="eyebrow">A clearer version</span><p class="prose">${esc(r.clearer)}</p></div>` : ""}
+      ${r.followUp ? `<p class="hook">Think about it: ${esc(r.followUp)}</p>` : ""}
+      ${r.newCards.length ? `<div class="fb"><h4>${r.added ? "Added to your cards" : "Cards for your gaps"}</h4><ul>${r.newCards.map(c => `<li>${esc(c.front)}</li>`).join("")}</ul>${r.added ? "" : `<button class="btn primary sm" data-act="feynAdd" style="align-self:flex-start">Add ${plural(r.newCards.length, "card")}</button>`}</div>` : ""}
+    </div>` : ""}
+  </div>`;
+};
+
+const studyMain = V.study, sectionMain = V.section;
+V.study = () => withSide(studyMain());
+V.section = () => { const h = sectionMain(); return S.view === "section" ? withSide(h) : h; };
+
+/* ---------- exams & daily prep plan ---------- */
+function examDay(ex){ return new Date(ex.date + "T00:00:00").getTime(); }
+function daysTo(ex){ return Math.round((examDay(ex) - startOfDay(Date.now())) / DAY); }
+function upcomingExams(){ return (S.profile.exams || []).filter(ex => daysTo(ex) >= 0).sort((a,b) => examDay(a) - examDay(b)); }
+function examCap(d){
+  const ex = upcomingExams().find(x => x.deckIds.includes(d.id) && daysTo(x) >= 2);
+  return ex ? startOfDay(examDay(ex) - DAY) : null;
+}
+function examInfo(ex){
+  const decks = ex.deckIds.map(deck).filter(Boolean);
+  const left = daysTo(ex);
+  const ready = decks.length ? Math.round(decks.reduce((n, d) => n + progress(d).total, 0) / decks.length) : 0;
+  const unlearned = decks.flatMap(d => activeSecs(d).filter(s => !s.learned).map(s => ({d, s})));
+  const due = decks.reduce((n, d) => n + dueCards(d).length, 0);
+  const lock = decks.flatMap(d => activeSecs(d).filter(s => s.learned && newL1(d, s).length).map(s => ({d, s})));
+  const feyn = decks.flatMap(d => activeSecs(d).filter(s => s.learned && (s.feyn || 0) < 70 && l1Ready(d, s)).map(s => ({d, s})));
+  const prac = decks.reduce((n, d) => n + practiceNew(d).length, 0);
+  const blind = decks.reduce((n, d) => n + liveCards(d).filter(c => c.blind > 0).length, 0);
+  const learnDays = Math.max(1, left - 3);
+  const perDay = unlearned.length ? Math.ceil(unlearned.length / learnDays) : 0;
+  let status = ["good","On track"];
+  if(!decks.length) status = ["","No lectures linked"];
+  else if(ready >= 100) status = ["good","Exam-ready"];
+  else if(left <= 3 && unlearned.length) status = ["bad", plural(unlearned.length, "section") + " still unread"];
+  else if(perDay > 4) status = ["bad","Behind: " + perDay + " sections a day needed"];
+  else if(perDay > 2) status = ["warn","Tight: " + perDay + " sections a day"];
+  const tasks = [];
+  if(left === 0){ tasks.push({t:"Exam today. Keep it light: one pass of your blind spots, then rest.", sub:"No new material today. Sleep and a calm head are worth more than one more section.", act:blind ? "exBlind" : null, btn:"Drill blind spots"}); return {decks, left, ready, unlearned, due, perDay, status, tasks}; }
+  if(due) tasks.push({t:"Review " + plural(due, "due card"), sub:"Always first: these are about to fade.", act:"exReview", btn:"Start"});
+  lock.slice(0, 2).forEach(({d, s}) => tasks.push({t:"Lock in “" + s.title + "”", sub:d.name + " · " + plural(newL1(d, s).length, "new card"), act:"exLock", arg:d.id + "|" + s.id, btn:"Start"}));
+  if(unlearned.length && left > 0){ const today = unlearned.slice(0, Math.max(1, perDay)); today.forEach(({d, s}, i) => tasks.push({t:"Learn “" + s.title + "”", sub:d.name + (s.priority === "high" ? " · high-yield" : "") + (i === 0 && perDay > 1 ? " · " + perDay + " sections a day to finish 3 days before the exam" : ""), act:"exLearn", arg:d.id + "|" + s.id, btn:"Learn"})); }
+  feyn.slice(0, left <= 7 ? 2 : 1).forEach(({d, s}) => tasks.push({t:"Explain “" + s.title + "” in your own words", sub:"Feynman check · " + d.name, act:"exFeyn", arg:d.id + "|" + s.id, btn:"Explain"}));
+  if(prac) tasks.push({t:"Practise " + plural(Math.min(prac, 15), "why / case / compare question"), sub:"Mixed across this exam's lectures", act:"exPractise", btn:"Start"});
+  if(left <= 7){
+    if(blind) tasks.push({t:"Drill " + plural(blind, "blind spot"), sub:"Things you were sure about but got wrong. Classic exam traps.", act:"exBlind", btn:"Drill"});
+    const weakest = decks.slice().sort((a,b) => progress(a).total - progress(b).total)[0];
+    if(weakest && left <= 3) tasks.push({t:"Mock quiz: " + weakest.name, sub:"Your least-revised lecture for this exam", act:"exQuiz", arg:weakest.id, btn:"Quiz"});
+  }
+  return {decks, left, ready, unlearned, due, perDay, status, tasks};
+}
+function examOf(a){ const id = String(a).split("#")[1] || a; return S.profile.exams.find(x => x.id === id); }
+function examsText(){
+  const ups = upcomingExams();
+  if(!ups.length) return "(no exams entered yet)";
+  return ups.map(ex => { const i = examInfo(ex);
+    return `- ${ex.name} on ${ex.date}${ex.time ? " " + ex.time : ""} (${i.left === 0 ? "TODAY" : "in " + i.left + " days"}), readiness ${i.ready}%, status: ${i.status[1]}. Lectures: ${i.decks.map(d => d.name + " " + progress(d).total + "%").join(", ") || "none linked"}. Unread sections: ${i.unlearned.length}. Today's plan in the app: ${i.tasks.map(t => t.t).join("; ") || "nothing"}`; }).join("\n");
+}
+function examPanel(){
+  const ups = upcomingExams();
+  if(!ups.length) return `<div class="panel stack" style="gap:10px"><div class="row between"><h2>Exams</h2><button class="btn primary sm" data-act="addExam">Add exam</button></div><p class="muted small">Enter your exam date and tick the PDFs it covers. You'll get a countdown and a plan for each day, so every PDF is secure before the exam. The AI will know your dates too.</p></div>`;
+  return `<div class="stack" style="gap:12px"><div class="row between"><h2>Exams</h2><button class="btn sm" data-act="addExam">Add exam</button></div>
+    ${ups.map(ex => { const i = examInfo(ex); return `<div class="panel exam">
+      <div class="count"><b>${i.left}</b><span>${i.left === 0 ? "TODAY" : i.left === 1 ? "DAY LEFT" : "DAYS LEFT"}</span></div>
+      <div class="stack" style="gap:10px;min-width:0">
+        <div class="row between" style="gap:8px"><div style="min-width:0"><h3>${esc(ex.name)}</h3><p class="small muted">${new Date(examDay(ex)).toLocaleDateString(undefined, {weekday:"short", day:"numeric", month:"short"})}${ex.time ? " · " + esc(ex.time) : ""} · ${i.decks.map(d => esc(d.name)).join(", ") || "no lectures linked yet"}</p></div>
+          <div class="row" style="gap:6px">${i.status[1] ? `<span class="chip ${i.status[0]}">${esc(i.status[1])}</span>` : ""}<span class="mono small">${i.ready}% ready</span><button class="btn ghost sm" data-act="editExam" data-arg="${ex.id}">Edit</button></div></div>
+        <div class="bar"><i style="width:${i.ready}%"></i></div>
+        <div><span class="eyebrow">Today's plan</span>
+          ${i.tasks.length ? i.tasks.map(t => `<div class="task"><div style="min-width:0"><b>${esc(t.t)}</b><p class="small muted">${esc(t.sub)}</p></div>${t.act ? `<button class="btn sm" data-act="${t.act}" data-arg="${esc((t.arg || "") + "#" + ex.id)}">${t.btn}</button>` : ""}</div>`).join("") : `<p class="small muted" style="padding-top:6px">${i.decks.length ? "Nothing left for today. Come back tomorrow for the next reviews." : "Edit the exam and pick the lectures it covers."}</p>`}
+        </div>
+        <button class="btn ghost sm" data-act="askExam" data-arg="${ex.id}" style="align-self:flex-start">Ask AI how to prepare for this exam</button>
+      </div></div>`; }).join("")}
+  </div>`;
+}
+/* ---------- reviews browser (Anki-style) ---------- */
+const RFILTERS = [["due","Due today"],["overdue","Overdue"],["tomorrow","Tomorrow"],["week","Next 7 days"],["new","New"],["blind","Blind spots"],["lapsed","Forgotten before"],["all","All cards"]];
+function reviewRows(){
+  const R = S.rev, end = endOfToday(), sod = startOfDay(Date.now()), q = R.q.trim().toLowerCase();
+  const test = {
+    due: c => c.due != null && c.due <= end, overdue: c => c.due != null && c.due < sod,
+    tomorrow: c => c.due != null && c.due > end && c.due <= end + DAY, week: c => c.due != null && c.due <= end + 6*DAY,
+    new: c => c.due == null, blind: c => c.blind > 0, lapsed: c => c.lapses > 0, all: () => true}[R.f];
+  const rows = [];
+  S.decks.forEach(d => { if(R.deck && d.id !== R.deck) return; (R.f === "all" ? d.cards : liveCards(d)).forEach(c => {
+    if(!test(c)) return;
+    if(q && !(c.front + " " + c.back).toLowerCase().includes(q)) return;
+    rows.push({d, c});
+  }); });
+  rows.sort((a, b) => (a.c.due ?? Infinity) - (b.c.due ?? Infinity));
+  return rows;
+}
+function dueLabel(c){
+  if(c.due == null) return `<span class="chip">New</span>`;
+  const sod = startOfDay(Date.now()), end = endOfToday();
+  if(c.due < sod){ const n = Math.round((sod - startOfDay(c.due)) / DAY); return `<span class="chip bad">Overdue ${n}d</span>`; }
+  if(c.due <= end) return `<span class="chip warn">Today</span>`;
+  return `<span class="chip">${relDay(c.due)}</span>`;
+}
+V.reviews = () => {
+  const R = S.rev; const rows = reviewRows(); const end = endOfToday();
+  const all = S.decks.flatMap(d => liveCards(d));
+  const fc = Array.from({length:7}, (_, i) => all.filter(c => c.due != null && (i === 0 ? c.due <= end : c.due > end + (i-1)*DAY && c.due <= end + i*DAY)).length);
+  const mx = Math.max(1, ...fc);
+  const st = {total: all.length, secure: all.filter(secure).length, learning: all.filter(c => c.due != null && !secure(c)).length, fresh: all.filter(c => c.due == null).length};
+  const shown = rows.slice(0, 300);
+  let lastDeck = null;
+  return `<div class="stack">
+    <div class="stack" style="gap:6px"><h1>Reviews</h1><p class="muted">Every card and when it's due, like Anki's browser. Study any group, or open a card to edit it.</p></div>
+    <div class="grid2">
+      <div class="panel stack" style="gap:10px">
+        <span class="eyebrow">Next 7 days</span>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:110px">
+          ${fc.map((n, i) => `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end"><span class="mono small">${n}</span><div style="width:100%;max-width:34px;height:${Math.max(2, Math.round(70 * n / mx))}px;background:${i === 0 ? "var(--accent)" : "color-mix(in srgb,var(--accent) 40%,var(--surface-2))"};border-radius:4px 4px 0 0"></div><span class="small muted">${i === 0 ? "Today" : new Date(Date.now() + i*DAY).toLocaleDateString(undefined, {weekday:"short"})}</span></div>`).join("")}
+        </div>
+      </div>
+      <div class="panel stack" style="gap:8px">
+        <span class="eyebrow">All cards</span>
+        ${[["Secure", st.secure],["Learning", st.learning],["New", st.fresh]].map(([l, n]) => `<div class="row between"><span>${l}</span><span class="mono">${n}</span></div><div class="bar"><i style="width:${pct(n, st.total)}%"></i></div>`).join("")}
+        <span class="small muted">${st.total} cards in total (skipped sections left out)</span>
+      </div>
+    </div>
+    <div class="seg" role="group" aria-label="Show">${RFILTERS.map(([k, l]) => `<button aria-pressed="${R.f === k}" data-act="revF" data-arg="${k}">${l}</button>`).join("")}</div>
+    <div class="row" style="flex-wrap:nowrap">
+      <input id="revq" type="search" data-bind="rev.q" data-live="1" value="${esc(R.q)}" placeholder="Search card text" style="flex:1;min-width:0">
+      <select id="revdeck" data-bind="rev.deck" data-live="1" style="width:auto;max-width:45%"><option value="">All lectures</option>${S.decks.map(d => `<option value="${d.id}" ${R.deck === d.id ? "selected" : ""}>${esc(d.name)}</option>`).join("")}</select>
+    </div>
+    <div class="row between"><b>${plural(rows.length, "card")}</b><button class="btn primary" data-act="revStudy" ${rows.length ? "" : "disabled"}>Study ${rows.length > 100 ? "first 100" : "these " + rows.length}</button></div>
+    <div class="panel" style="padding-block:6px">
+      ${shown.length ? shown.map(({d, c}) => { const s = section(d, c.sec); const head = d.id !== lastDeck && !R.deck ? `<div class="eyebrow" style="padding:14px 0 2px">${esc(d.name)}</div>` : ""; lastDeck = d.id;
+        return head + `<div class="crow">${dueLabel(c)}
+          <div class="t stack" style="gap:2px"><b>${esc(c.front)}</b><span class="small muted">L${c.bloom} ${LEVELS[c.bloom]} · ${s ? esc(s.title) : ""}${c.due != null ? " · interval " + fmtIv(c.interval || 0) + " · ease " + c.ease.toFixed(2) : ""}${c.lapses ? " · forgotten " + c.lapses + "×" : ""}${c.blind ? " · blind spot" : ""}${secure(c) ? " · secure" : ""}</span></div>
+          <div class="row" style="gap:4px;justify-content:flex-end"><button class="btn ghost sm" data-act="revOne" data-arg="${d.id}|${c.id}">Study</button><button class="btn ghost sm" data-act="editCard" data-arg="${d.id}|${c.id}">Edit</button></div></div>`; }).join("")
+        : `<p class="muted" style="padding:16px 0">${R.f === "due" ? "Nothing due today. Nice." : "No cards here."}</p>`}
+      ${rows.length > 300 ? `<p class="small muted" style="padding:10px 0">Showing the first 300. Search or pick a lecture to narrow it down.</p>` : ""}
+    </div>
+  </div>`;
+};
+
+/* ---------- render ---------- */
+const $view = document.getElementById("view");
+function render(){
+  document.querySelectorAll("[data-nav]").forEach(b => b.setAttribute("aria-current", b.dataset.nav === S.view ? "page" : "false"));
+  const active = document.activeElement; const aid = active && active.id; const sel = aid && active.selectionStart != null ? [active.selectionStart, active.selectionEnd] : null;
+  $view.innerHTML = (V[S.view] || V.today)();
+  if(aid){ const el = document.getElementById(aid); if(el && el !== document.body){ el.focus({preventScroll:true}); if(sel && el.setSelectionRange) try{ el.setSelectionRange(sel[0], sel[1]); }catch(e){} } }
+  renderModal();
+  if(S.split && (S.view === "study" || S.view === "section")) scrollChat();
+  if(S.view === "section" && S.showSlides){ const d = deck(S.deckId), s = section(d, S.secId); if(d && s && d.file) loadSlides(d, s); }
+}
+function renderModal(){
+  const m = document.getElementById("modal"); const md = S.modal;
+  if(!md){ m.hidden = true; m.innerHTML = ""; return; }
+  m.hidden = false;
+  const courses = S.profile.courses || [];
+  if(md.kind === "card"){ const f = md.f;
+    m.innerHTML = `<div class="box" role="dialog" aria-modal="true"><h2>${md.cardId ? "Edit card" : "Add a card"}</h2>
+      <div class="row" style="flex-wrap:nowrap"><label class="f" style="flex:1">Level<select id="mlv" data-bind="modal.f.bloom" data-num="1">${[1,2,3,4].map(l => `<option value="${l}" ${f.bloom === l ? "selected" : ""}>L${l} ${LEVELS[l]}</option>`).join("")}</select></label>
+      <label class="f" style="flex:1">Section<select id="msec" data-bind="modal.f.sec">${deck(md.deckId).sections.map(s => `<option value="${s.id}" ${f.sec === s.id ? "selected" : ""}>${esc(s.title)}</option>`).join("")}</select></label></div>
+      <label class="f">Question<textarea id="mfront" data-bind="modal.f.front" style="min-height:70px">${esc(f.front)}</textarea></label>
+      <label class="f">Answer<textarea id="mback" data-bind="modal.f.back" style="min-height:70px">${esc(f.back)}</textarea></label>
+      <label class="f">Key points for marking <span class="hint">One per line. Used for written answers at L2–L4.</span><textarea id="mpts" data-bind="modal.f.points" style="min-height:60px">${esc(f.points)}</textarea></label>
+      <label class="f">Multiple-choice wrong options <span class="hint">One per line, 2–3 lines. Leave empty and the AI writes them when needed.</span><textarea id="mwrong" data-bind="modal.f.wrong" style="min-height:60px">${esc(f.wrong)}</textarea></label>
+      <div class="row between">${md.cardId ? `<button class="btn danger sm" data-act="delCard">Delete card</button>` : "<span></span>"}<div class="row"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveCard">Save</button></div></div></div>`;
+  }else if(md.kind === "lecture"){ const d = deck(md.deckId);
+    m.innerHTML = `<div class="box" role="dialog" aria-modal="true"><h2>Manage lecture</h2>
+      <label class="f">Name<input id="mname" type="text" data-bind="modal.name" value="${esc(md.name)}"></label>
+      <label class="f">Course<select id="mcourse" data-bind="modal.courseId"><option value="">Uncategorised</option>${courses.map(c => `<option value="${c.id}" ${md.courseId === c.id ? "selected" : ""}>${esc(c.name)}</option>`).join("")}</select></label>
+      ${d.file ? `<p class="small muted">File: ${esc(d.file.name)} · ${fmtSize(d.file.size || 0)} · added ${fmtDate(d.added || d.created)}</p>` : `<p class="small muted">Added ${fmtDate(d.added || d.created)}${d.photos ? " · " + plural(d.photos.length, "photo") + " kept" : " · no original file kept"}</p>`}
+      <div class="row"><button class="btn primary" data-act="saveLecture">Save</button><button class="btn" data-act="closeModal">Cancel</button></div>
+      <hr class="sep">
+      ${md.confirm ? `<p><b>Delete “${esc(d.name)}”, its file, cards and progress?</b> This can't be undone.</p><div class="row"><button class="btn danger" data-act="delDeck">Yes, delete it</button><button class="btn" data-act="closeModal">Keep it</button></div>` : `<button class="btn danger sm" data-act="askDel" style="align-self:flex-start">Delete lecture</button>`}</div>`;
+  }else if(md.kind === "exam"){ const f = md.f;
+    m.innerHTML = `<div class="box" role="dialog" aria-modal="true"><h2>${md.id ? "Edit exam" : "Add exam"}</h2>
+      <label class="f">Exam name<input id="exname" type="text" data-bind="modal.f.name" value="${esc(f.name)}" placeholder="e.g. Pharmacology midterm"></label>
+      <div class="grid2"><label class="f">Date<input id="exdate" type="date" data-bind="modal.f.date" value="${esc(f.date)}"></label><label class="f">Time <span class="hint">Optional</span><input id="extime" type="time" data-bind="modal.f.time" value="${esc(f.time)}"></label></div>
+      <div class="stack" style="gap:8px">
+        <div class="row between"><b style="font-size:.92rem">Which PDFs are in this exam? <span class="muted" style="font-weight:400">${f.deckIds.length} of ${S.decks.length} ticked</span></b>${S.decks.length ? `<div class="row" style="gap:4px"><button class="btn ghost sm" data-act="examAll">Tick all</button><button class="btn ghost sm" data-act="examNone">Clear</button></div>` : ""}</div>
+        ${S.decks.length ? `<div class="elist">${(S.profile.courses || []).concat([{id:null, name:"Uncategorised"}]).map(c => { const ds = S.decks.filter(d => c.id ? d.courseId === c.id : !d.courseId || !course(d.courseId)); if(!ds.length) return ""; const allOn = ds.every(d => f.deckIds.includes(d.id));
+          return `<div class="egroup"><div class="row between"><span class="eyebrow">${esc(c.name)}</span>${c.id ? `<button class="btn ghost sm" data-act="examCourse" data-arg="${c.id}">${allOn ? "Untick course" : "Tick whole course"}</button>` : ""}</div>
+            ${ds.map(d => { const on = f.deckIds.includes(d.id); return `<button class="erow" role="checkbox" aria-checked="${on}" data-act="toggleExamDeck" data-arg="${d.id}"><span class="ebox">${on ? "✓" : ""}</span><span style="min-width:0"><b>${esc(d.name)}</b><span class="small muted">${d.file ? esc(d.file.name) + " · " : ""}${d.pageCount ? plural(d.pageCount, "page") + " · " : ""}${progress(d).total}% revised</span></span></button>`; }).join("")}</div>`; }).join("")}</div>` : `<p class="small muted">Add your lecture PDFs first, then tick them here.</p>`}
+      </div>
+      <p class="small muted">The plan finishes learning new sections 3 days before the exam, leaving the last days for reviews, blind spots and mock quizzes. Reviews for these lectures are also capped so nothing is scheduled after the exam.</p>
+      <div class="row between">${md.id ? (md.confirm ? `<div class="row"><button class="btn danger sm" data-act="delExam">Yes, delete</button><button class="btn sm" data-act="cancelDelExam">Keep</button></div>` : `<button class="btn danger sm" data-act="askDelExam">Delete exam</button>`) : "<span></span>"}<div class="row"><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveExam">Save</button></div></div></div>`;
+  }else if(md.kind === "models"){
+    m.innerHTML = `<div class="box" role="dialog" aria-modal="true"><h2>AI settings</h2>
+      <div class="f" style="display:flex;flex-direction:column;gap:6px"><b style="font-size:.92rem">Language the AI talks to you in</b><span class="small muted">Explanations, marking feedback and chat. Questions, cards, MC options and model answers always stay in English for your exam, and medical terms stay in English.</span>${langSeg("lang-modal")}</div>
+      <hr class="sep">
+      <p class="small muted">AI runs through Codex with your ChatGPT login, using the model set in Codex. Auto picks a reasoning level for each job; the other options fix it. Every call uses your own ChatGPT usage.</p>
+      <label class="f">Ask AI chats <span class="hint">Questions, explanations, hints while you practise</span>${modelSelect("chat", "m-chat")}</label>
+      <label class="f">Lessons, Feynman and mock quizzes <span class="hint">Writing key points and cards, judging your explanations. Auto uses medium reasoning.</span>${modelSelect("teach", "m-teach")}</label>
+      <label class="f">Marking and quick help <span class="hint">Marking written answers, "Explain why", MC options. Auto uses low reasoning so it stays fast.</span>${modelSelect("mark", "m-mark")}</label>
+      <div class="row"><button class="btn primary" data-act="closeModal">Done</button></div></div>`;
+  }else if(md.kind === "course"){
+    m.innerHTML = `<div class="box" role="dialog" aria-modal="true"><h2>${md.id ? "Course" : "New course"}</h2>
+      <label class="f">Course name<input id="mcname" type="text" data-bind="modal.name" value="${esc(md.name)}" placeholder="e.g. Pharmacology 2"></label>
+      <div class="row"><button class="btn primary" data-act="saveCourse">Save</button><button class="btn" data-act="closeModal">Cancel</button></div>
+      ${md.id ? `<hr class="sep">${md.confirm ? `<p><b>Delete this course?</b> Its lectures move to Uncategorised. Nothing else is deleted.</p><div class="row"><button class="btn danger" data-act="delCourse">Delete course</button><button class="btn" data-act="closeModal">Cancel</button></div>` : `<button class="btn danger sm" data-act="askDelCourse" style="align-self:flex-start">Delete course</button>`}` : ""}</div>`;
+  }
+  const first = m.querySelector("input[type=text]"); if(first && !m.contains(document.activeElement)) first.focus();
+}
+let toastT;
+function toast(t){ const el = document.getElementById("toast"); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 3200); }
+
+/* ---------- actions ---------- */
+function openDeck(id){ S.deckId = id; S.view = "lecture"; S.ltab = "path"; render(); window.scrollTo(0,0); }
+function openSection(d, s){ S.deckId = d.id; S.secId = s.id; S.view = "section"; render(); window.scrollTo(0,0); genLesson(d, s); if(s.lesson) prefetchNext(d, s); }
+function openFeyn(d, s){ S.feyn = {deckId:d.id, secId:s.id, text:"", busy:false, err:"", result:null}; S.view = "feyn"; render(); window.scrollTo(0,0); }
+function focusChat(){ const el = document.getElementById("chatin"); if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+
+const A = {
+  nav(a){ S.view = a; render(); window.scrollTo(0,0); if(a === "ask") scrollChat(); },
+  open(a){ openDeck(a); },
+  sample(){ const d = sampleDeck(); S.decks.push(d); saveDeck(d); openDeck(d.id); },
+  reviewAll, blind: blindDrill,
+  mode(a){ setMode(a); },
+  togglePaste(){ S.add.showPaste = !S.add.showPaste; render(); },
+  build: buildLecture,
+  ltab(a){ S.ltab = a; render(); if(a === "tutor") scrollChat(); },
+  nextStep(){
+    const d = deck(S.deckId), ns = nextStep(d), s = ns.sec && section(d, ns.sec);
+    ({review: () => reviewDeck(d), lockin: () => lockIn(d, s), learn: () => openSection(d, s), feyn: () => openFeyn(d, s), practice: () => practise(d), done: () => { S.ltab = "quiz"; render(); }, wait: () => A.nav("today")})[ns.kind]();
+  },
+  prio(a){ const [sid, p] = a.split("|"); const d = deck(S.deckId); section(d, sid).priority = p; saveDeck(d); render(); },
+  learn(a){ const d = deck(S.deckId); openSection(d, section(d, a)); },
+  feyn(a){ const d = deck(S.deckId); openFeyn(d, section(d, a)); },
+  lockin(a){ const d = deck(S.deckId); lockIn(d, section(d, a)); },
+  reviewDeck(){ reviewDeck(deck(S.deckId)); },
+  practise(){ practise(deck(S.deckId)); },
+  toggleSlides(){ S.showSlides = !S.showSlides; render(); },
+  saveFocus(){ const d = deck(S.deckId); d.focus = (S.focusDraft[d.id] ?? d.focus).trim(); delete S.focusDraft[d.id]; saveDeck(d); toast("Exam focus saved"); render(); },
+  async resort(){
+    const d = deck(S.deckId); d.focus = (S.focusDraft[d.id] ?? d.focus).trim(); delete S.focusDraft[d.id]; saveDeck(d);
+    const el = document.getElementById("resortStatus"); if(el) el.innerHTML = `<span class="spin"></span> Re-sorting…`;
+    try{
+      const r = await sample.json(`A student's exam focus notes for a pharmacology / physiology lecture:
+${d.focus || "(none)"}
+Sections:
+${d.sections.map(s => "[" + s.id + "] " + s.title + (s.lesson ? " — " + s.lesson.keyPoints.slice(0,3).join("; ") : "")).join("\n")}
+Assign each section a priority: "high" (emphasised or classic exam material), "normal", or "skip" (the notes say it won't be examined, or nothing examinable). Reply with only JSON: [{"id":"...","priority":"high","why":"short reason"}]`, {modelTier:"quick"});
+      let n = 0; (Array.isArray(r) ? r : []).forEach(x => { const s = section(d, String(x.id)); if(s && ["high","normal","skip"].includes(x.priority)){ if(s.priority !== x.priority) n++; s.priority = x.priority; s.why = String(x.why || s.why); } });
+      saveDeck(d); toast(n ? plural(n, "section") + " re-sorted" : "No changes needed"); render();
+    }catch(e){ const el2 = document.getElementById("resortStatus"); if(el2) el2.textContent = aiMsg(e); }
+  },
+  lectureMenu(a){ const d = deck(a || S.deckId); S.modal = {kind:"lecture", deckId:d.id, name:d.name, courseId:d.courseId || "", confirm:false}; renderModal(); },
+  saveLecture(){ const d = deck(S.modal.deckId); d.name = S.modal.name.trim() || d.name; d.courseId = S.modal.courseId || null; saveDeck(d); S.modal = null; render(); toast("Saved"); },
+  askDel(){ S.modal.confirm = true; renderModal(); },
+  async delDeck(){
+    const id = S.modal.deckId, d = deck(id);
+    S.decks = S.decks.filter(x => x.id !== id); persist(id, null); deletePages(id);
+    S.threads.filter(t => t.deckId === id).forEach(t => { t.deckId = null; t.secId = null; saveThread(t); });
+    if(assets){ const ids = [d.file?.id, ...(d.photos || [])].filter(Boolean); for(const a of ids){ try{ await assets.delete(a); }catch(e){} } }
+    S.modal = null; if(S.deckId === id) S.view = "library"; render(); toast("Lecture deleted");
+  },
+  closeModal(){ S.modal = null; renderModal(); },
+  libCourse(a){ S.lib.course = a; render(); },
+  newCourse(){ S.modal = {kind:"course", id:null, name:"", confirm:false}; renderModal(); },
+  editCourse(a){ S.modal = {kind:"course", id:a, name:courseName(a), confirm:false}; renderModal(); },
+  saveCourse(){
+    const md = S.modal, nm = md.name.trim(); if(!nm){ toast("Give the course a name."); return; }
+    if(md.id) course(md.id).name = nm.slice(0, 60); else { const c = {id:gid("k"), name:nm.slice(0, 60)}; S.profile.courses.push(c); S.lib.course = c.id; }
+    saveProfile(); S.modal = null; render();
+  },
+  askDelCourse(){ S.modal.confirm = true; renderModal(); },
+  delCourse(){ const id = S.modal.id; S.profile.courses = S.profile.courses.filter(c => c.id !== id); S.decks.filter(d => d.courseId === id).forEach(d => { d.courseId = null; saveDeck(d); }); saveProfile(); S.lib.course = "all"; S.modal = null; render(); toast("Course deleted"); },
+  regen(){ const d = deck(S.deckId), s = section(d, S.secId); S.gen[s.id] = null; render(); genLesson(d, s); },
+  chk(a){ const [i, v] = a.split("|"); const d = deck(S.deckId), s = section(d, S.secId); s.checks[i] = v; saveDeck(d); render(); },
+  markLearned(){
+    const d = deck(S.deckId), s = section(d, S.secId);
+    if(!s.learned){ s.learned = true; d.lastStudied = Date.now(); saveDeck(d); prefetchNext(d, s); }
+    if(newL1(d, s).length) lockIn(d, s); else openDeck(d.id);
+  },
+  askAbout(a){ const d = deck(S.deckId); const t = newThread(d.id, a); S.tutorTemp = t; S.tutorId[d.id] = t.id; S.view = "lecture"; S.ltab = "tutor"; render(); window.scrollTo(0,0); focusChat(); },
+  askCard(){ const k = cur(); if(!k) return; const t = newThread(k.d.id, k.c.sec); S.askTemp = t; S.askId = t.id; S.chat.input = "About this card:\nQ: " + k.c.front + "\nA: " + k.c.back + "\n\nMy question: "; S.view = "ask"; render(); window.scrollTo(0,0); focusChat(); },
+  clearCtx(){ const t = activeThread(); t.secId = null; if(S.threads.includes(t)) saveThread(t); render(); },
+  suggest(a){ if(a.endsWith("…")){ S.chat.input = a.replace(/\s*…$/, " "); render(); focusChat(); return; } sendChat(activeThread(), a); },
+  sendChat(){ sendChat(activeThread()); },
+  stopChat(){ S.chat.ctl && S.chat.ctl.abort(); },
+  newChat(){ const t = newThread(); S.askTemp = t; S.askId = t.id; render(); focusChat(); },
+  newTutor(){ const d = deck(S.deckId); const t = newThread(d.id); S.tutorTemp = t; S.tutorId[d.id] = t.id; render(); focusChat(); },
+  tutorSwitch(a){ S.tutorId[S.deckId] = a; render(); scrollChat(); },
+  openThread(a){ Object.assign(S.askUI, {menu:null, confirm:null, rename:null}); S.askId = a; S.view = "ask"; render(); window.scrollTo(0,0); scrollChat(); },
+  askCtx(v){ const t = activeThread(); t.deckId = v || null; t.secId = null; if(S.threads.includes(t)) saveThread(t); render(); },
+  delThread(a){ const t = thread(a) || activeThread(); S.threads = S.threads.filter(x => x !== t); persist(t.id, null); if(S.askId === t.id) S.askId = null; S.askUI.confirm = null; S.askUI.menu = null; if(S.view === "ask" || S.view === "library") render(); else A.nav("ask"); toast("Chat deleted"); },
+  threadMenu(a){ const U = S.askUI; U.menu = U.menu === a ? null : a; U.confirm = null; render(); },
+  askDelThread(a){ const U = S.askUI; U.menu = null; U.rename = null; U.confirm = a; U.q = ""; if(S.view !== "ask"){ S.askId = a; S.view = "ask"; } render(); },
+  cancelDelThread(){ S.askUI.confirm = null; render(); },
+  renameThread(a){ const t = thread(a); if(!t) return; const U = S.askUI; U.menu = null; U.confirm = null; U.rename = a; U.renameText = t.title; render(); const el = document.getElementById("renamein"); if(el){ el.focus(); el.select(); } },
+  renameSave(){ const U = S.askUI, t = thread(U.rename); const v = U.renameText.replace(/\s+/g, " ").trim(); if(t && v){ t.title = v.slice(0, 80); saveThread(t); } U.rename = null; render(); },
+  chatsBy(a){ S.askUI.by = a; render(); },
+  cfilter(a){ S.cardFilter = Number(a); render(); },
+  addCard(){ const d = deck(S.deckId); S.modal = {kind:"card", deckId:d.id, cardId:null, f:{bloom:1, sec:(d.sections[0] || {}).id, front:"", back:"", points:"", wrong:""}}; renderModal(); },
+  revF(a){ S.rev.f = a; render(); },
+  addExam(){ S.modal = {kind:"exam", id:null, f:{name:"", date:"", time:"", deckIds:[]}, confirm:false}; renderModal(); },
+  editExam(a){ const ex = S.profile.exams.find(x => x.id === a); if(!ex) return; S.modal = {kind:"exam", id:ex.id, f:{name:ex.name, date:ex.date, time:ex.time || "", deckIds:ex.deckIds.slice()}, confirm:false}; renderModal(); },
+  toggleExamDeck(a){ const ids = S.modal.f.deckIds; const i = ids.indexOf(a); i >= 0 ? ids.splice(i, 1) : ids.push(a); renderModal(); },
+  examCourse(a){ const f = S.modal.f; const ds = S.decks.filter(d => d.courseId === a).map(d => d.id); const allOn = ds.every(id => f.deckIds.includes(id)); f.deckIds = allOn ? f.deckIds.filter(id => !ds.includes(id)) : [...new Set([...f.deckIds, ...ds])]; renderModal(); },
+  examAll(){ S.modal.f.deckIds = S.decks.map(d => d.id); renderModal(); },
+  examNone(){ S.modal.f.deckIds = []; renderModal(); },
+  saveExam(){
+    const md = S.modal, f = md.f;
+    if(!f.name.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(f.date)){ toast("Add a name and a date."); return; }
+    const data = {name:f.name.trim().slice(0, 80), date:f.date, time:f.time || "", deckIds:f.deckIds.slice()};
+    if(md.id) Object.assign(S.profile.exams.find(x => x.id === md.id), data); else S.profile.exams.push({id:gid("x"), ...data});
+    saveProfile(); S.modal = null; render(); toast("Exam saved");
+  },
+  askDelExam(){ S.modal.confirm = true; renderModal(); },
+  cancelDelExam(){ S.modal.confirm = false; renderModal(); },
+  delExam(){ S.profile.exams = S.profile.exams.filter(x => x.id !== S.modal.id); saveProfile(); S.modal = null; render(); toast("Exam deleted"); },
+  exReview(a){ const ex = examOf(a); const items = []; examInfo(ex).decks.forEach(d => items.push(...pairs(d, dueCards(d)))); startSession(shuffle(items), "Exam prep · " + ex.name, null, "today"); },
+  exLock(a){ const [p] = a.split("#"); const [di, si] = p.split("|"); const d = deck(di); lockIn(d, section(d, si)); },
+  exLearn(a){ const [p] = a.split("#"); const [di, si] = p.split("|"); const d = deck(di); openSection(d, section(d, si)); },
+  exFeyn(a){ const [p] = a.split("#"); const [di, si] = p.split("|"); const d = deck(di); openFeyn(d, section(d, si)); },
+  exPractise(a){ const ex = examOf(a); const items = []; examInfo(ex).decks.forEach(d => items.push(...pairs(d, practiceNew(d)))); startSession(shuffle(items).slice(0, 15), "Exam prep · " + ex.name, null, "today"); },
+  exBlind(a){ const ex = examOf(a); const items = []; examInfo(ex).decks.forEach(d => items.push(...pairs(d, liveCards(d).filter(c => c.blind > 0)))); startSession(shuffle(items), "Blind spots · " + ex.name, null, "today"); },
+  exQuiz(a){ const [p] = a.split("#"); openDeck(p); S.ltab = "quiz"; render(); },
+  askExam(a){ const ex = S.profile.exams.find(x => x.id === a); if(!ex) return; const t = newThread(); S.askTemp = t; S.askId = t.id; S.view = "ask"; render(); window.scrollTo(0,0); sendChat(t, "How should I prepare for " + ex.name + " on " + ex.date + "? Look at my progress and give me a realistic day-by-day plan until then."); },
+  setModel(v, k){ if(!MODELS[v] || !k) return; S.profile.models[k] = v; saveProfile(); render(); toast("Model set to " + MODELS[v].short); },
+  modelsMenu(){ S.modal = {kind:"models"}; renderModal(); },
+  setLang(a){ S.profile.lang = a === "en" ? "en" : "yue"; saveProfile(); render(); toast(a === "en" ? "AI will reply in English" : "AI 會用廣東話解釋，題目同術語保持英文"); },
+  revStudy(){ const rows = reviewRows().slice(0, 100); const lbl = (RFILTERS.find(x => x[0] === S.rev.f) || [,"Cards"])[1]; startSession((S.rev.f === "due" || S.rev.f === "overdue") ? shuffle(rows.map(r => ({d:r.d.id, c:r.c.id}))) : rows.map(r => ({d:r.d.id, c:r.c.id})), "Reviews · " + lbl, null, "reviews"); },
+  revOne(a){ const [di, ci] = a.split("|"); startSession([{d:di, c:ci}], "Single card", null, "reviews"); },
+  toggleSplit(){ S.split = !S.split; try{ localStorage.setItem("recall-lab-split", S.split ? "1" : "0"); }catch(e){} render(); scrollChat(); },
+  newSideChat(){
+    if(S.view === "study" && S.session){ const k = cur(); const t = newThread(k ? k.d.id : S.session.deckId); t.title = "Practice · " + S.session.label; S.session.thread = t; }
+    else if(S.view === "section"){ const t = newThread(S.deckId, S.secId); S.secTemp[S.secId] = t; S.secThread[S.secId] = t.id; }
+    render(); focusChat();
+  },
+  editCard(a){ let di = S.deckId; if(a.includes("|")) [di, a] = a.split("|"); const d = deck(di); const c = d.cards.find(x => x.id === a); S.modal = {kind:"card", deckId:d.id, cardId:c.id, f:{bloom:c.bloom, sec:c.sec, front:c.front, back:c.back, points:c.points.join("\n"), wrong:c.mc ? c.mc.wrong.join("\n") : ""}}; renderModal(); },
+  saveCard(){
+    const md = S.modal, d = deck(md.deckId), f = md.f;
+    if(!f.front.trim() || !f.back.trim()){ toast("Add a question and an answer."); return; }
+    const pts = String(f.points).split("\n").map(x => x.trim()).filter(Boolean);
+    const wrong = String(f.wrong).split("\n").map(x => x.trim()).filter(Boolean).slice(0, 3);
+    let c;
+    if(md.cardId){ c = d.cards.find(x => x.id === md.cardId); Object.assign(c, {bloom:Number(f.bloom), sec:f.sec, front:f.front.trim(), back:f.back.trim(), points:pts}); c.type = c.bloom === 1 ? (/_{3,}/.test(c.front) ? "cloze" : "basic") : ["", "", "why", "case", "compare"][c.bloom]; }
+    else { c = mkCard({bloom:f.bloom, front:f.front, back:f.back, points:pts, type:/_{3,}/.test(f.front) ? "cloze" : undefined}, f.sec); d.cards.push(c); }
+    if(wrong.length >= 2) c.mc = {a: c.mc && md.cardId ? c.mc.a : c.back.slice(0, 160), wrong}; else if(!wrong.length && md.cardId && c.mc && f.wrong === "") delete c.mc;
+    saveDeck(d); S.modal = null; render();
+  },
+  delCard(){ const md = S.modal, d = deck(md.deckId); d.cards = d.cards.filter(c => c.id !== md.cardId); saveDeck(d); S.modal = null; render(); toast("Card deleted"); },
+  quizGen, quizNew(){ S.quiz.qs = null; render(); },
+  qpick(a){ quizPick(Number(a)); },
+  qnext(){ S.quiz.i++; S.quiz.picked = null; render(); },
+  exitStudy(){ const s = S.session; s && s.ctl && s.ctl.abort(); const id = s && s.deckId, back = s && s.returnTo; S.session = null; if(back) A.nav(back); else if(id) openDeck(id); else A.nav("today"); },
+  conf(a){ S.session.conf = a; render(); },
+  reveal(){ reveal(); },
+  check: checkAnswer,
+  grade(a){ grade(Number(a)); },
+  mcPick(a){ mcPick(Number(a)); },
+  mcGrade(a){ mcGrade(Number(a)); },
+  explain: explainCard,
+  feynCheck,
+  feynAdd(){ const f = S.feyn, d = deck(f.deckId); d.cards.push(...f.result.newCards); f.result.added = true; saveDeck(d); render(); toast("Cards added"); },
+};
+
+document.addEventListener("click", e => {
+  const U = S.askUI;
+  if(U.rename && !e.target.closest("#renamein")){ A.renameSave(); if(!e.target.closest("[data-act]")) return; }
+  if(U.menu && !e.target.closest(".tmenu,.tdots")){ U.menu = null; if(!e.target.closest("[data-act]")){ render(); return; } }
+  const t = e.target.closest("[data-act]"); if(!t || t.disabled) return;
+  if(t.tagName === "A" || t.tagName === "LABEL") return;
+  e.preventDefault();
+  const fn = A[t.dataset.act]; if(fn) fn(t.dataset.arg);
+});
+document.getElementById("modal").addEventListener("click", e => { if(e.target.id === "modal"){ S.modal = null; renderModal(); } });
+function setPath(path, v){ const ks = path.split("."); let o = S; for(let i=0;i<ks.length-1;i++){ o[ks[i]] = o[ks[i]] ?? {}; o = o[ks[i]]; } o[ks[ks.length-1]] = v; }
+function bindEv(e){ const el = e.target, b = el.dataset && el.dataset.bind; if(!b) return; setPath(b, el.dataset.num ? Number(el.value) : el.value); if(el.dataset.live) render(); }
+document.addEventListener("input", e => { if(e.target.tagName !== "SELECT") bindEv(e); });
+document.addEventListener("change", e => {
+  if(e.target.id === "file") return onFile(e.target);
+  if(e.target.dataset && e.target.dataset.change){ const fn = A[e.target.dataset.change]; if(fn) fn(e.target.value, e.target.dataset.key); return; }
+  if(e.target.tagName === "SELECT") bindEv(e);
+});
+document.addEventListener("keydown", e => {
+  if(e.target.id === "renamein"){ if(e.key === "Enter"){ e.preventDefault(); A.renameSave(); } else if(e.key === "Escape"){ e.preventDefault(); S.askUI.rename = null; render(); } return; }
+  if(e.key === "Escape" && (S.askUI.menu || S.askUI.confirm)){ S.askUI.menu = null; S.askUI.confirm = null; render(); return; }
+  if(e.target.id === "chatin" && e.key === "Enter" && !e.shiftKey && !e.isComposing){ e.preventDefault(); A.sendChat(); return; }
+  if(e.key === "Escape" && S.modal){ S.modal = null; renderModal(); return; }
+  if(S.view !== "study" || !S.session || S.modal) return;
+  const s = S.session, k = cur(); if(!k) return;
+  if(e.target.matches("textarea,input,select")){ if(e.key === "Enter" && (e.metaKey || e.ctrlKey) && s.phase === "ask" && s.present === "lq"){ e.preventDefault(); aiOK() && s.typed.trim() ? checkAnswer() : reveal(); } return; }
+  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  if(s.present === "mc" && s.opts){
+    if(s.picked == null && /^[1-9]$/.test(e.key) && Number(e.key) <= s.opts.length){ e.preventDefault(); mcPick(Number(e.key) - 1); }
+    else if(s.picked != null && /^[1-4]$/.test(e.key)){ e.preventDefault(); mcGrade(Number(e.key)); }
+    else if(s.picked != null && e.key === "Enter"){ e.preventDefault(); mcGrade(s.opts[s.picked].ok ? 3 : 1); }
+    return;
+  }
+  if(s.phase === "ask" && e.key === " "){ e.preventDefault(); reveal(); }
+  else if(s.phase === "answer" && /^[1-4]$/.test(e.key)){ e.preventDefault(); grade(Number(e.key)); }
+});
+
+/* ---------- sample lecture (example content) ---------- */
+function sampleDeck(){
+  const S1 = gid("s"), S2 = gid("s"), S3 = gid("s"), S4 = gid("s");
+  const C = (sec, type, bloom, front, back, points, mcAnswer, wrong) => mkCard({type, bloom, front, back, points: points || [], mcAnswer: mcAnswer || back, wrong}, sec);
+  return {kind:"deck", id: gid("d"), sample:true, name:"Sample · Autonomic pharmacology", created: Date.now(), added: Date.now(), courseId:null, srcKind:"text", pageCount:0,
+    focus:"Example: Prof said β-blocker selectivity and organophosphate poisoning are definitely examined. Skip the history slides.",
+    sections:[
+      {id:S1, title:"Cholinergic drugs", pages:null, priority:"high", why:"Organophosphate poisoning is flagged in the exam focus", learned:false, checks:{}, feyn:0, lesson:{
+        keyPoints:["Acetylcholine acts on muscarinic (M1–M3, G-protein) and nicotinic (ion channel) receptors.","Atropine is a competitive muscarinic antagonist: ↑ heart rate, dry mouth, dilated pupils, urinary retention.","M2 receptors on the SA node mediate vagal slowing of the heart.","★ Organophosphates irreversibly inhibit acetylcholinesterase, so ACh builds up at muscarinic and nicotinic synapses.","★ Treat organophosphate poisoning with IV atropine (muscarinic effects) plus pralidoxime (reactivates the enzyme if given early)."],
+        explain:"Acetylcholine is the parasympathetic messenger. On the heart it binds M2 receptors at the SA node and slows the rate. On glands and smooth muscle it binds M3 receptors and drives secretions and constriction. Blocking these receptors with atropine therefore removes the 'rest and digest' brake: the heart speeds up, secretions dry, and pupils dilate. The opposite problem happens with organophosphates. They disable acetylcholinesterase, the enzyme that clears ACh, so ACh floods every cholinergic synapse. Muscarinic overload gives the classic picture of salivation, sweating, bronchorrhoea, miosis and bradycardia. Nicotinic overload at muscle causes twitching, then weakness. Atropine blocks the muscarinic flood but does nothing at nicotinic sites, which is why pralidoxime is added.",
+        hook:"Organophosphate muscarinic signs are DUMBBELS: Diarrhoea, Urination, Miosis, Bradycardia, Bronchorrhoea, Emesis, Lacrimation, Salivation.",
+        checks:[{q:"Why does atropine not fix muscle weakness in organophosphate poisoning?", a:"Weakness is a nicotinic effect at the neuromuscular junction, and atropine only blocks muscarinic receptors."},{q:"Which receptor does the vagus nerve act on to slow the heart?", a:"M2 muscarinic receptors on the SA node."}]}},
+      {id:S2, title:"Adrenergic agonists", pages:null, priority:"high", why:"Anaphylaxis and shock management are classic exam material", learned:false, checks:{}, feyn:0, lesson:{
+        keyPoints:["Postganglionic sympathetic neurons release noradrenaline, except at sweat glands (ACh).","α1 → vasoconstriction; β1 → ↑ heart rate and contractility; β2 → bronchodilation and vasodilation in skeletal muscle.","Adrenaline acts on α and β receptors. It is first-line for anaphylaxis: 0.5 mg IM (1 mg/mL) in adults.","Noradrenaline is mainly α1 (some β1). It is the first-line vasopressor in septic shock.","Salbutamol is a short-acting β2 agonist used to relieve bronchospasm."],
+        explain:"Each adrenergic receptor does one main job. α1 squeezes blood vessels. β1 makes the heart beat faster and harder. β2 relaxes airway smooth muscle. Choosing a drug means choosing which jobs you want done. In anaphylaxis, vessels are leaking and dilating and the airways are closing, so you need all three. Adrenaline gives α1 to restore blood pressure, β2 to open the airways, and it also stabilises mast cells. In septic shock the main problem is vasodilation. Noradrenaline gives strong α1 tightening with less heart-rate push, which suits that. Salbutamol is selective for β2, so it opens the airways with fewer cardiac effects. At high doses it still causes tachycardia and tremor.",
+        hook:"You have 1 heart (β1) and 2 lungs (β2).",
+        checks:[{q:"Why is adrenaline better than noradrenaline in anaphylaxis?", a:"Adrenaline adds β2 bronchodilation and mast-cell stabilisation on top of α1 vasoconstriction."},{q:"Which receptor does salbutamol target?", a:"β2 adrenoceptors on bronchial smooth muscle."}]}},
+      {id:S3, title:"β-blockers", pages:null, priority:"high", why:"Selectivity is flagged in the exam focus", learned:false, checks:{}, feyn:0, lesson:{
+        keyPoints:["★ Propranolol is non-selective (β1 + β2). Atenolol and bisoprolol are β1-selective (cardioselective).","β1 blockade ↓ heart rate, contractility and renin release, which lowers blood pressure.","★ Blocking β2 in the airways can trigger bronchospasm, so non-selective β-blockers are contraindicated in asthma.","Selectivity is dose-dependent. Use cardioselective agents cautiously in asthma or COPD.","β-blockers can mask the warning signs of hypoglycaemia (tremor, palpitations)."],
+        explain:"β-blockers sit on β receptors and stop adrenaline and noradrenaline from acting. Blocking β1 in the heart slows it and weakens each beat. In the kidney, β1 blockade cuts renin release. Both effects lower blood pressure and the heart's oxygen demand. The trouble comes from β2. In the lungs, β2 is what keeps the airways open under stress. A non-selective drug like propranolol blocks that too, and an asthmatic can bronchospasm. Cardioselective drugs mostly spare β2, but only mostly: at higher doses they lose selectivity. Because the early warning signs of hypoglycaemia (shaking and a racing heart) are adrenergic, β-blockers can hide them from diabetics.",
+        hook:"Atenolol, Bisoprolol, Metoprolol (A, B, M) are β1 Mostly; Propranolol is Promiscuous.",
+        checks:[{q:"Why can β-blockers lower blood pressure even without changing heart rate much?", a:"β1 blockade in the kidney reduces renin release, lowering angiotensin II and aldosterone."},{q:"Name one cardioselective β-blocker.", a:"Atenolol, bisoprolol or metoprolol."}]}},
+      {id:S4, title:"History of autonomic research", pages:null, priority:"skip", why:"Exam focus says skip the history slides", learned:false, checks:{}, feyn:0, lesson:null},
+    ],
+    cards:[
+      C(S1,"basic",1,"Which receptors does atropine block?","Muscarinic ACh receptors (competitive antagonist).",null,"Muscarinic acetylcholine receptors",["Nicotinic acetylcholine receptors","β1 adrenoceptors","α1 adrenoceptors"]),
+      C(S1,"basic",1,"Antidotes for organophosphate poisoning?","IV atropine plus pralidoxime.",null,"IV atropine plus pralidoxime",["IV neostigmine plus atropine","IM adrenaline plus hydrocortisone","Naloxone plus flumazenil"]),
+      C(S1,"cloze",1,"Organophosphates irreversibly inhibit ____.","acetylcholinesterase",null,"acetylcholinesterase",["choline acetyltransferase","monoamine oxidase","nicotinic receptors"]),
+      C(S1,"why",2,"Why does atropine cause tachycardia?","It blocks M2 receptors on the SA node, removing vagal slowing, so sympathetic drive is unopposed and heart rate rises.",["M2 receptors on the SA node","Removes vagal / parasympathetic tone","Unopposed sympathetic drive → ↑ HR"],"It blocks SA-node M2 receptors, removing vagal slowing",["It stimulates β1 receptors on the SA node","It blocks nicotinic receptors at the AV node","It releases noradrenaline from sympathetic nerves"]),
+      C(S1,"case",3,"A farmer has pinpoint pupils, drooling, bradycardia and wheeze after spraying crops. What is the mechanism, and what do you give first?","Organophosphate inhibition of acetylcholinesterase causes ACh excess at muscarinic and nicotinic sites. Give IV atropine titrated to dry secretions, plus pralidoxime.",["AChE inhibition → ACh build-up","Muscarinic signs explained","IV atropine first, titrated to secretions","Pralidoxime for nicotinic effects / enzyme"],"AChE inhibition → ACh excess; give IV atropine first",["Muscarinic agonist overdose; give neostigmine first","Opioid toxicity; give naloxone first","β-blocker overdose; give glucagon first"]),
+      C(S2,"basic",1,"First-line drug and dose for adult anaphylaxis?","Adrenaline 0.5 mg IM (1 mg/mL).",null,"Adrenaline 0.5 mg IM (1 mg/mL)",["Adrenaline 1 mg IV (1 mg/mL) bolus","Chlorphenamine 10 mg IV","Hydrocortisone 200 mg IM"]),
+      C(S2,"cloze",1,"Salbutamol is a short-acting ____ agonist.","β2",null,"β2",["β1","α1","M3"]),
+      C(S2,"basic",1,"Main transmitter of postganglionic sympathetic neurons?","Noradrenaline (sweat glands use ACh).",null,"Noradrenaline (except sweat glands: ACh)",["Acetylcholine at all targets","Adrenaline","Dopamine"]),
+      C(S2,"compare",4,"Adrenaline vs noradrenaline: which suits septic shock and which suits anaphylaxis? Justify.","Noradrenaline for septic shock: mainly α1 vasoconstriction raises MAP with less tachycardia. Adrenaline for anaphylaxis: α1 vasoconstriction plus β2 bronchodilation and mast-cell stabilisation.",["NA mainly α1 → raises MAP","Septic shock is mainly vasodilation","Adrenaline adds β2 bronchodilation","Mast-cell stabilisation in anaphylaxis"],"NA for septic shock (α1); adrenaline for anaphylaxis (α1 + β2)",["Adrenaline for septic shock; NA for anaphylaxis","NA for both, as it is more β2-selective","Adrenaline for both, as NA has no α1 effect"]),
+      C(S3,"cloze",1,"Propranolol is a ____ β-blocker.","non-selective (β1 + β2)",null,"non-selective (β1 + β2)",["β1-selective","β2-selective","α1-selective"]),
+      C(S3,"basic",1,"Name two cardioselective β-blockers.","Atenolol, bisoprolol (also metoprolol).",null,"Atenolol and bisoprolol",["Propranolol and timolol","Labetalol and carvedilol","Salbutamol and terbutaline"]),
+      C(S3,"why",2,"Why can non-selective β-blockers trigger bronchospasm in asthma?","They block β2 receptors on bronchial smooth muscle, removing adrenergic bronchodilation, so constriction dominates.",["β2 receptors on bronchial smooth muscle","β2 normally causes bronchodilation","Blockade → unopposed bronchoconstriction"],"They block bronchial β2, removing adrenergic bronchodilation",["They stimulate bronchial M3 receptors directly","They block β1 receptors on airway smooth muscle","They release histamine from mast cells"]),
+      C(S3,"case",3,"A 58-year-old with COPD starts propranolol for tremor and becomes wheezy a week later. What's happening, and what would you change?","Non-selective β2 blockade is causing bronchoconstriction. Stop propranolol. For tremor consider an alternative such as primidone; if a β-blocker is needed for the heart, use a cardioselective one cautiously.",["Propranolol blocks β2 in airways","Stop / switch the drug","Cardioselective agent if a β-blocker is needed"],"β2 blockade → bronchoconstriction; stop propranolol and switch",["β1 blockade → pulmonary oedema; add furosemide","COPD exacerbation unrelated to the drug; add steroids","Anaphylaxis to propranolol; give IM adrenaline"]),
+      C(S3,"compare",4,"A hypertensive patient also has asthma. Atenolol or propranolol? Justify.","Atenolol. It is β1-selective, so it is less likely to block bronchial β2 receptors. Propranolol is non-selective and contraindicated in asthma. Selectivity falls at high doses, so use it cautiously.",["Atenolol is β1-selective","Propranolol blocks β2 → bronchospasm","Selectivity is dose-dependent"],"Atenolol, because it is β1-selective",["Propranolol, because it is β1-selective","Propranolol, because β2 blockade relaxes airways","Either; selectivity makes no difference in asthma"]),
+    ]};
+}
+
+boot();
+</script>
+<script src="/studio.js"></script>
+<script src="/preferences.js"></script>
+<script src="/exams.js"></script>
+
+</body>
+</html>
+

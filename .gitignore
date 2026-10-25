@@ -1,0 +1,13 @@
+data/
+.venv/
+node_modules/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+__pycache__/
+*.pyc
+qa/
+.auth/
+.codex/

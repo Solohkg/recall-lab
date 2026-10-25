@@ -1,0 +1,22 @@
+const fs=require('node:fs'),path=require('node:path'),os=require('node:os'),dns=require('node:dns').promises,net=require('node:net');
+const {execFile}=require('node:child_process');
+const {promisify}=require('node:util');const exec=promisify(execFile);
+module.exports=({root})=>{
+ const python=path.join(root,'.venv/bin/python');
+ async function temp(fn){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'recall-import-'));try{return await fn(dir)}finally{fs.rmSync(dir,{recursive:true,force:true})}}
+ async function file(buffer,name){if(!/\.(docx|pptx)$/i.test(name))throw new Error('Use PDF, TXT, Markdown, DOCX or PPTX.');return temp(async dir=>{const input=path.join(dir,'input');fs.writeFileSync(input,buffer);const {stdout}=await exec(python,[path.join(root,'document-tools.py'),'extract',input,path.basename(name)],{timeout:30000,maxBuffer:8*1048576});return JSON.parse(stdout)})}
+ async function anki(body){return temp(async dir=>{const input=path.join(dir,'input.json'),output=path.join(dir,'cards.apkg');fs.writeFileSync(input,JSON.stringify(body));await exec(python,[path.join(root,'document-tools.py'),'anki',input,output],{timeout:30000});return fs.readFileSync(output)})}
+ function privateIP(address){if(net.isIPv4(address)){const p=address.split('.').map(Number);return p[0]===127||p[0]===0||p[0]===10||p[0]===169&&p[1]===254||p[0]===172&&p[1]>=16&&p[1]<=31||p[0]===192&&p[1]===168||p[0]>=224}return address==='::1'||address==='::'||/^(fc|fd|fe80|::ffff:)/i.test(address)}
+ async function allowed(value){const u=new URL(value);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||!['','80','443'].includes(u.port))throw new Error('Only public HTTP(S) links are supported.');const addresses=await dns.lookup(u.hostname,{all:true});if(addresses.some(a=>privateIP(a.address)))throw new Error('Local/private network URLs are not supported.');return u}
+ const clean=s=>s.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,'').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,'').replace(/<(br|\/p|\/div|\/h[1-6]|\/li)[^>]*>/gi,'\n').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/[ \t]+/g,' ').replace(/\n\s*\n/g,'\n\n').trim();
+ async function url(value){let u=await allowed(value);
+  if(/(^|\.)youtube\.com$|^youtu\.be$/.test(u.hostname)){
+   return temp(async dir=>{try{await exec(path.join(root,'.venv/bin/yt-dlp'),['--skip-download','--write-subs','--write-auto-subs','--sub-langs','en.*,zh.*','--sub-format','vtt','--no-playlist','--no-warnings','--socket-timeout','15','-o',path.join(dir,'video.%(ext)s'),'--',u.href],{timeout:60000,maxBuffer:200000});const subs=fs.readdirSync(dir).filter(f=>f.endsWith('.vtt'));if(!subs.length)throw new Error('No available captions.');const vtt=fs.readFileSync(path.join(dir,subs[0]),'utf8');const pages=[];let last='';for(const block of vtt.split(/\n\n/)){const lines=block.split('\n');const time=lines.find(l=>l.includes('-->'));if(!time)continue;const text=clean(lines.slice(lines.indexOf(time)+1).join(' '));if(text&&text!==last){pages.push(`[${time.split(' -->')[0]}] ${text}`);last=text}}return {title:'YouTube transcript',url:u.href,pages:pages.length?pages:[clean(vtt)],kind:'video'}}catch(e){throw new Error('字幕未能讀取（影片可能冇字幕或要求登入）。請喺 Sources 貼上 transcript，再保留影片 URL。')}})
+  }
+  let response;for(let i=0;i<5;i++){response=await fetch(u,{redirect:'manual',signal:AbortSignal.timeout(15000),headers:{'User-Agent':'RecallLab/3.0'}});if(response.status>=300&&response.status<400){u=await allowed(new URL(response.headers.get('location'),u).href);continue}break}
+  if(!response.ok)throw new Error('Website returned '+response.status);if(!/text\//.test(response.headers.get('content-type')||''))throw new Error('Download PDFs/files and upload them instead.');
+  const reader=response.body.getReader();let text='',size=0;const decoder=new TextDecoder();while(true){const {done,value}=await reader.read();if(done)break;size+=value.length;if(size>4*1048576){await reader.cancel();throw new Error('Article too large.')}text+=decoder.decode(value,{stream:true})}
+  const title=clean((/<title[^>]*>([\s\S]*?)<\/title>/i.exec(text)||[])[1]||u.hostname),body=clean(text);if(body.length<80)throw new Error('Article text unavailable. Paste its text in Sources.');return {title,url:u.href,pages:body.match(/[\s\S]{1,10000}/g)||[body],kind:'website'};
+ }
+ return {file,url,anki};
+};
